@@ -1,11 +1,11 @@
-from threemystic_cloud_data_client.cloud_providers.aws.config.base_class.base import cloud_data_client_aws_config_base as base
+from threemystic_cloud_cmdb.cloud_providers.aws.config.base_class.base import cloud_cmdb_aws_config_base as base
 from threemystic_common.base_class.generate_data.generate_data_handlers import generate_data_handlers
 
 
 
-class cloud_data_client_aws_config_step_1(base):
+class cloud_cmdb_aws_config_step_1(base):
   def __init__(self, *args, **kwargs):
-    super().__init__(logger_name= "cloud_data_client_aws_config_step_1", *args, **kwargs)
+    super().__init__(logger_name= "cloud_cmdb_aws_config_step_1", *args, **kwargs)
     
 
   def step(self, *args, **kwargs):
@@ -40,7 +40,7 @@ class cloud_data_client_aws_config_step_1(base):
     if not self.get_common().helper_type().bool().is_true(check_value= response.get("base_config").get("formated")):
       return
     
-    from threemystic_cloud_data_client.cloud_providers.general  import cloud_data_client_general as client
+    from threemystic_cloud_cmdb.cloud_providers.general  import cloud_cmdb_general as client
     client(common= self.get_common()).action_config()
     
     

@@ -33,7 +33,7 @@ class cloud_cmdb_cli(base_process_options):
             "default": None, 
             "const": "data",
             "dest": "client_action",
-            "help": "Action: Generate the CMDB.",
+            "help": "Action: Generate the CMDB. (must also select the data to run or --all to generate for all)",
             "action": 'store_const'
         },
         "--provider,-p": {
@@ -62,6 +62,11 @@ class cloud_cmdb_cli(base_process_options):
       self.version_dispaly()
       return
     
+    if force_action == "config":
+      from threemystic_cloud_cmdb.cli.actions.config import cloud_cmdb_config as user_action
+      user_action(cloud_cmdb_client= self._cloud_cmdb_client).main(*args, **kwargs)
+      return
+    
 
 
     return
@@ -77,7 +82,7 @@ class cloud_cmdb_cli(base_process_options):
       common= self._cloud_cmdb_client.get_common())
     
     print(f"You currenly have installed")    
-    print(f"3mystic_cloud_cmdb: v{cloud_data_client.version()}")
+    print(f"3mystic_cloud_cmdb: v{self._cloud_cmdb_client.version()}")
     print(f"3mystic_cloud_data_client: v{cloud_data_client.version()}")
     print(f"3mystic_cloud_client: v{cloud_client.version()}")
     print(f"3mystic_common: v{self._cloud_cmdb_client.get_common().version()}")

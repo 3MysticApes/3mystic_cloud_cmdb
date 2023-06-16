@@ -1,5 +1,5 @@
-from threemystic_cloud_data_client.cloud_providers.base_class.base import cloud_data_client_provider_base as base
+from threemystic_cloud_cmdb.cloud_providers.base_class.base import cloud_cmdb_provider_base as base
 
-class cloud_data_client_provider_aws_base(base):
+class cloud_cmdb_provider_aws_base(base):
   def __init__(self, *args, **kwargs):
     super().__init__(provider= "aws", *args, **kwargs)  
