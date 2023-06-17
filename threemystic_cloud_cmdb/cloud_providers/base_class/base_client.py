@@ -135,7 +135,6 @@ class cloud_cmdb_provider_base_client(base):
       return {}
     
     return self.get_common().helper_type().dictionary().merge_dictionary([
-      self.get_cloud_data_client().get_default_parser_args(),
       {
         "--all, -a": {
           "default": None, 
@@ -144,7 +143,8 @@ class cloud_cmdb_provider_base_client(base):
           "help": "Data Action: This will generate cmdb for all supported reports.",
           "action": 'store_const'
         }
-      }
+      },      
+      self.get_cloud_data_client().get_default_parser_args(),
     ])
   
   def get_cloud_cmdb(self, *args, **kwargs):
@@ -155,7 +155,8 @@ class cloud_cmdb_provider_base_client(base):
   
   def get_cloud_data_client(self, *args, **kwargs):
     return self.__get_cloud_data_client_raw().client(
-      force_action_arguments= self.get_action_from_arguments()
+      force_action_arguments= self.get_action_from_arguments(),
+      suppress_parser_help = True,
     )
   
   def __get_cloud_data_client_raw(self, *args, **kwargs):

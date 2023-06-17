@@ -8,8 +8,12 @@ class cloud_cmdb_azure_client_action(base):
       logger_name= "cloud_cmdb_azure_client_action_storage", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
+  
+  def main(self, *args, **kwargs):
+
+    print("storage")
     
-    
+
   async def _process_account_data(self, account, loop, *args, **kwargs):
 
-    print("blob")
+    print("storage")
