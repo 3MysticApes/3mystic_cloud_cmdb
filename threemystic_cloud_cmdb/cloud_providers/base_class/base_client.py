@@ -24,7 +24,6 @@ class cloud_cmdb_provider_base_client(base):
     self._set_action_from_arguments(*args, **kwargs)
 
     self._set_data_action()
-    self.run()
   
   def get_default_parser_args(self, *args, **kwargs):
     if hasattr(self, "_cmdb_default_parser_args"):

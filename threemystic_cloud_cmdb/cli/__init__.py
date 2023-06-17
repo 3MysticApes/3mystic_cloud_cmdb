@@ -75,7 +75,7 @@ class cloud_cmdb_cli(base_process_options):
       if not "provider" in kwargs:
         if not self._cloud_cmdb_client.get_common().helper_type().string().is_null_or_whitespace(string_value= self._client_provider):
           kwargs["provider"] = self._client_provider
-      self._cloud_cmdb_client.client(*args, **kwargs)
+      self._cloud_cmdb_client.client(*args, **kwargs).run()
       return
     
 
