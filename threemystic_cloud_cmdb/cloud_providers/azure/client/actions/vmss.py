@@ -8,7 +8,7 @@ class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="vmss", 
-      logger_name= "cloud_cmdb_azure_client_actionvmss", 
+      logger_name= "cloud_cmdb_azure_client_action_vmss", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   

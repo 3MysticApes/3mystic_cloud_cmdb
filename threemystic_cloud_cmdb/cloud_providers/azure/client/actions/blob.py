@@ -6,7 +6,7 @@ class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="blob", 
-      logger_name= "cloud_cmdb_azure_client_actionblob", 
+      logger_name= "cloud_cmdb_azure_client_action_blob", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   

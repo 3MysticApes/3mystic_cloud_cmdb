@@ -31,7 +31,7 @@ class cloud_cmdb_cli(base_process_options):
         },
         "--generate,-g": {
             "default": None, 
-            "const": "data",
+            "const": "generate",
             "dest": "client_action",
             "help": "Action: Generate the CMDB. (must also select the data to run or --all to generate for all)",
             "action": 'store_const'
@@ -62,13 +62,20 @@ class cloud_cmdb_cli(base_process_options):
       self.version_dispaly()
       return
 
-    if force_action == "config":      
+    if force_action == "config":
       if not "provider" in kwargs:
         if not self._cloud_cmdb_client.get_common().helper_type().string().is_null_or_whitespace(string_value= self._client_provider):
           kwargs["provider"] = self._client_provider
 
       from threemystic_cloud_cmdb.cli.actions.config import cloud_cmdb_config as user_action
       user_action(cloud_cmdb_client= self._cloud_cmdb_client).main(*args, **kwargs)
+      return
+    
+    if force_action == "generate":
+      if not "provider" in kwargs:
+        if not self._cloud_cmdb_client.get_common().helper_type().string().is_null_or_whitespace(string_value= self._client_provider):
+          kwargs["provider"] = self._client_provider
+      self._cloud_cmdb_client.client(*args, **kwargs)
       return
     
 
