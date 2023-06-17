@@ -1,4 +1,4 @@
-from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_class.base import cloud_data_client_azure_client_action_base as base
+from threemystic_cloud_cmdb.cloud_providers.azure.client.actions.base_class.base import cloud_cmdb_azure_client_action_base as base
 import asyncio
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.costmanagement.models import TimeframeType, OperatorType, QueryColumnType, QueryDefinition, QueryTimePeriod, QueryDataset, QueryAggregation, QueryGrouping, QueryFilter, QueryComparisonExpression
@@ -8,11 +8,11 @@ from azure.mgmt.costmanagement import CostManagementClient
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.vm import cloud_data_client_azure_client_action as vm_action
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.vmss import cloud_data_client_azure_client_action as vmss_action
 
-class cloud_data_client_azure_client_action(base):
+class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="storage", 
-      logger_name= "cloud_data_client_azure_client_action_storage", 
+      logger_name= "cloud_cmdb_azure_client_actionstorage", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   

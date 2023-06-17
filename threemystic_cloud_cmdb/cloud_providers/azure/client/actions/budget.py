@@ -1,15 +1,15 @@
-from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_class.base import cloud_data_client_azure_client_action_base as base
+from threemystic_cloud_cmdb.cloud_providers.azure.client.actions.base_class.base import cloud_cmdb_azure_client_action_base as base
 import asyncio
 from decimal import Decimal, ROUND_HALF_UP
 from azure.mgmt.costmanagement import CostManagementClient
 from azure.mgmt.costmanagement.models import GranularityType,ForecastDefinition,ForecastType,ForecastTimeframe,ForecastTimePeriod,QueryDefinition,TimeframeType,ExportType,QueryTimePeriod
 
 
-class cloud_data_client_azure_client_action(base):
+class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="budget", 
-      logger_name= "cloud_data_client_azure_client_action_budget", 
+      logger_name= "cloud_cmdb_azure_client_actionbudget", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   

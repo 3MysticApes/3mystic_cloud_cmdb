@@ -1,14 +1,14 @@
-from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_class.base import cloud_data_client_azure_client_action_base as base
+from threemystic_cloud_cmdb.cloud_providers.azure.client.actions.base_class.base import cloud_cmdb_azure_client_action_base as base
 import asyncio
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 
 
-class cloud_data_client_azure_client_action(base):
+class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="vmss", 
-      logger_name= "cloud_data_client_azure_client_action_vmss", 
+      logger_name= "cloud_cmdb_azure_client_actionvmss", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   

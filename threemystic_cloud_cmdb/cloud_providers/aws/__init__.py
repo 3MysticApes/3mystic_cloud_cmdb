@@ -3,7 +3,7 @@ from threemystic_cloud_cmdb.cloud_providers.aws.base_class.base import cloud_cmd
 
 class cloud_cmdb_aws(base):
   def __init__(self, *args, **kwargs):
-    super().__init__(logger_name= "cloud_data_client_aws", *args, **kwargs)
+    super().__init__(logger_name= "cloud_cmdb_aws", *args, **kwargs)
 
   def action_config(self, *args, **kwargs): 
     

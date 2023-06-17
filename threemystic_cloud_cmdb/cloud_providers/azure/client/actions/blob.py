@@ -1,12 +1,12 @@
-from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_class.base import cloud_data_client_azure_client_action_base as base
+from threemystic_cloud_cmdb.cloud_providers.azure.client.actions.base_class.base import cloud_cmdb_azure_client_action_base as base
 import asyncio
 from azure.mgmt.storage import StorageManagementClient
 
-class cloud_data_client_azure_client_action(base):
+class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="blob", 
-      logger_name= "cloud_data_client_azure_client_action_blob", 
+      logger_name= "cloud_cmdb_azure_client_actionblob", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   

@@ -5,7 +5,7 @@ from threemystic_common.base_class.generate_data.generate_data_handlers import g
 
 class cloud_cmdb_azure_config_step_1(base):
   def __init__(self, *args, **kwargs):
-    super().__init__(logger_name= "cloud_data_client_azure_config_step_1", *args, **kwargs)
+    super().__init__(logger_name= "cloud_cmdb_azure_config_step_1", *args, **kwargs)
     
 
   def step(self, *args, **kwargs):
