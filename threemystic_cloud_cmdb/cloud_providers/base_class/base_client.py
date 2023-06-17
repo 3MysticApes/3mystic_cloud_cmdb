@@ -1,5 +1,6 @@
 from threemystic_common.base_class.base_provider import base
 from threemystic_common.base_class.base_script_options import base_process_options
+
 import textwrap, argparse
 import asyncio, concurrent.futures
 
@@ -22,7 +23,27 @@ class cloud_cmdb_provider_base_client(base):
 
     self._set_action_from_arguments(*args, **kwargs)
 
-    self._process_action()
+    self._set_data_action()
+    self.run()
+  
+  def get_default_parser_args(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_default_parser_args"):
+      return self._cmdb_default_parser_args
+    
+    from threemystic_cloud_data_client.cloud_providers.base_class.base_client import cloud_data_client_provider_base_client
+    self._cmdb_default_parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
+      {
+        "--all, -a": {
+          "default": None, 
+          "const": "all",
+          "dest": "data_action",
+          "help": "Data Action: This will generate cmdb for all supported reports.",
+          "action": 'store_const'
+        }
+      },      
+      cloud_data_client_provider_base_client.get_default_parser_args(),
+    ])
+    return self.get_default_parser_args()
 
   def __get_action_parser_options(self, *args, **kwargs):
     if hasattr(self, "_action_process_options"):
@@ -67,22 +88,11 @@ class cloud_cmdb_provider_base_client(base):
     return self.get_action_from_arguments()  
   
 
-  def _process_action(self, *args, **kwargs):
-    if self.get_action_from_arguments() is None or len(self.get_action_from_arguments()) < 1:
+  def run(self, *args, **kwargs):
+    if self.get_data_action() is None:
       return
     
-    try:
-      process_data_action = self._process_data_action(
-        provider = self.get_provider(),
-        action= self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments() .get('data_action') , case= "lower"), 
-        *args, **kwargs)
-
-      process_data_action.main()
-    
-    except Exception as err:
-      print(f"The action {self.get_action_from_arguments().get('data_action')} is unknown")
-      self.get_common().get_logger().exception(f"The action {self.get_action_from_arguments() .get('data_action')} is unknown", extra={"exception": err})
-      self._get_action_parser().print_help()
+    asyncio.run(self.get_data_action().main())
 
   def _set_data_action(self, *args, **kwargs):
     if self.get_action_from_arguments() is None or len(self.get_action_from_arguments()) < 1:
@@ -130,23 +140,6 @@ class cloud_cmdb_provider_base_client(base):
       
       await asyncio.wait(running_tasks)
   
-  def get_default_parser_args(self, *args, **kwargs):
-    if self.get_cloud_data_client() is None:
-      return {}
-    
-    return self.get_common().helper_type().dictionary().merge_dictionary([
-      {
-        "--all, -a": {
-          "default": None, 
-          "const": "all",
-          "dest": "data_action",
-          "help": "Data Action: This will generate cmdb for all supported reports.",
-          "action": 'store_const'
-        }
-      },      
-      self.get_cloud_data_client().get_default_parser_args(),
-    ])
-  
   def get_cloud_cmdb(self, *args, **kwargs):
     return self.__cloud_cmdb
   
@@ -156,14 +149,15 @@ class cloud_cmdb_provider_base_client(base):
   def get_cloud_data_client(self, *args, **kwargs):
     return self.__get_cloud_data_client_raw().client(
       force_action_arguments= self.get_action_from_arguments(),
-      suppress_parser_help = True,
+      suppress_parser_help= True,
     )
   
   def __get_cloud_data_client_raw(self, *args, **kwargs):
-    return self.__cloud_data_client
+    return self.__cloud_data_client_raw
   
   def __set_cloud_data_client(self, cloud_data_client, *args, **kwargs):
-    self.__cloud_data_client = cloud_data_client
+    self.__cloud_data_client_raw = cloud_data_client
+    
   
   def get_cloud_client(self, *args, **kwargs):
     return self.get_cloud_data_client().get_cloud_client()
