@@ -12,7 +12,9 @@ class cloud_cmdb_provider_base_cmdb(base):
     self._set_cloud_cmdb(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
 
-
+  @abc.abstractclassmethod
+  def generate_resource_tags_csv(self, tags, seperator=",", tag_attribute_seperator=":", *args, **kwargs):
+        pass
   @abc.abstractclassmethod
   def _load_cmdb_general_data(self, *args, **kwargs):
     pass

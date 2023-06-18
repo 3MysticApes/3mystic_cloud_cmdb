@@ -22,16 +22,15 @@ class cloud_cmdb_azure_client_action(base):
       "BlobStorage": {
         "Service":{
           "display": "Service",
-          "data_key": "extra_raw_item"
-          "handler": lambda item: (item["extra_raw_item"] if item.get("extra_raw_item") is not None else item)["sku"]["name"]
+          "handler": lambda item: (item if item is not None else {}).get("extra_storage_account").get("sku").get("name")
         },
         "BucketContainer":{
           "display": "BucketContainer",
-          "handler": lambda item: (item["extra_raw_item"] if item.get("extra_raw_item") is not None else item)["name"]  
+          "handler": lambda item: (item if item is not None else {}).get("extra_storage_account").get("name") 
         },
         "BucketName":{
           "display": "BucketName",
-          "handler": lambda item: item["name"] if item.get("extra_raw_item") is not None else None
+          "handler": lambda item: (item if item is not None else {}).get("name") 
         },
         "AvgSizeLast24HR_Bytes":{
           "display": "AvgSizeLast24HR_Bytes",
@@ -47,15 +46,15 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Encryption":{
           "display": "Encryption",
-          "handler": lambda item: None
+          "handler": lambda item: (item if item is not None else {}).get("encryption").get("services").get("blob").get("enabled")
         },
         "Versioning":{
           "display": "Versioning",
-          "handler": lambda item: None
+          "handler": lambda item: (item if item is not None else {}).get("immutable_storage_with_versioning")
         },
         "Tags":{
           "display": "Tags",
-          "handler": lambda item: common.generate_resource_tags_csv(tags=item["Tags"])
+          "handler": lambda item: self.generate_resource_tags_csv(tags=(item if item is not None else {}).get("extra_storage_account").get("tags"))
         },
       } 
     }
