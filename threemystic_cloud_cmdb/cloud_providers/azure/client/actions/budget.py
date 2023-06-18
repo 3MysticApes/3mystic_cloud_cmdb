@@ -13,10 +13,39 @@ class cloud_cmdb_azure_client_action(base):
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   
-  async def main(self, *args, **kwargs):
-
-    print("blob")
-
-  async def _process_account_data(self, account, loop, *args, **kwargs):
-
-    print("blob")
+  def _load_cmdb_general_data(self, *args, **kwargs):
+    return {
+      "Budget":{
+        "display":"Budget",
+        "include_region": False,
+        "include_resourcegroup": False,
+        "include_requiredtags": False
+      }
+    }
+  
+  def _load_cmdb_column_data(self, *args, **kwargs):
+    return {
+      "Budget": {
+        "last_seven_days":{
+          "display": "Last7Days",
+          "handler": lambda item: item["last_seven_days"] if item.get("last_seven_days") is not None else ""
+        },
+        "month_to_date":{
+          "display": "MonthToDate",
+          "handler": lambda item: item["month_to_date"] if item.get("month_to_date") is not None else ""
+        },
+        "month_forecast":{
+          "display": "MonthTotalForcast",
+          "handler": lambda item: item["month_forecast"] if item.get("month_forecast") is not None else ""
+        },
+        "year_to_date":{
+          "display": "YearToDate",
+          "handler": lambda item: item["year_to_date"] if item.get("year_to_date") is not None else ""
+        },
+        "year_forecast":{
+          "display": "YearTotalForcast",
+          "handler": lambda item: item["year_forecast"] if item.get("year_forecast") is not None else ""
+        },
+      } 
+    }
+ 

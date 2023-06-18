@@ -12,40 +12,63 @@ class cloud_cmdb_azure_client_action(base):
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   
-  
-    
-  async def __process_get_resources_vmss(self, account, *args, **kwargs):
-    resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    try:
-      return { resource.id: resource for resource in self.get_cloud_client().sdk_request(
-          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-          lambda_sdk_command=lambda: resource_client.resources.list(filter="resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'", expand="createdTime,changedTime,provisioningState")
-        )
-      }
-    except:
-      return []
-        
-  async def _process_account_data(self, account, loop, *args, **kwargs):
-    client = ComputeManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    tasks = {
-      "resource": loop.create_task(self.__process_get_resources_vmss(account= account))
-    }
-
-    await asyncio.wait(tasks.values())
-
+  def _load_cmdb_general_data(self, *args, **kwargs):
     return {
-      "account": account,
-      "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
-        "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
-        "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
-        "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
-        "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
-        "extra_resource": self.get_cloud_client().serialize_azresource(resource= tasks["resource"].result().get(item.id)),
-        "extra_vmss_vms": [ self.get_cloud_client().serialize_azresource(resource= vm) for vm in client.virtual_machine_scale_set_vms.list(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= item), virtual_machine_scale_set_name= item.name) ]
-
-      }, self.get_cloud_client().serialize_azresource(resource= item)) for item in self.get_cloud_client().sdk_request(
-          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-          lambda_sdk_command=lambda: client.virtual_machine_scale_sets.list_all()
-        )
-      ]
+      "ASG":{
+        "display":"ASG",
+      }
+    }
+  
+  def _load_cmdb_column_data(self, *args, **kwargs):
+    return {
+      "ASG": {
+        "AutoScalingGroup":{
+          "display": "AutoScalingGroup",
+          "handler": lambda item: "VMSS"
+        },        
+        "ASGArn": {
+          "display": {"default": "ID", "cmdb":"ASG Arn"},
+          "handler": lambda item: item["asg"].id if item.get("asg") is not None and item["asg"] and common.is_type(item["asg"], VirtualMachineScaleSet) else None
+        },
+        "ASGName": {
+          "display": "ASG Name",
+          "handler": lambda item: item["asg"].name if item.get("asg") is not None and item["asg"] and common.is_type(item["asg"], VirtualMachineScaleSet) else None
+        },
+        "ASGMin": {
+          "display": "Min",
+          "handler": lambda item: None
+        },
+        "ASGDesiredCapacity": {
+          "display": "Desired",
+          "handler": lambda item: None
+        },
+        "ASGMaxSize": {
+          "display": "Max",
+          "handler": lambda item: item["asg"].sku.capacity if item.get("asg") is not None and item["asg"] and common.is_type(item["asg"], VirtualMachineScaleSet) else None
+        },
+        "ASGEffective": {
+          "display": "Effective",
+          "handler": lambda item: None
+        },
+        "InstanceType": {
+          "display": "Instance Type",
+          "handler": lambda item: item["asg"].sku.name if item.get("asg") is not None and item["asg"] and common.is_type(item["asg"], VirtualMachineScaleSet) else None
+        },
+        "AMIID": {
+          "display": "AMI ID",
+          "handler": lambda item: get_ami_id(item["asg"]) if item.get("asg") is not None and item["asg"] and common.is_type(item["asg"], VirtualMachineScaleSet) else None
+        },
+        "AMIName": {
+          "display": "AMI Name",
+          "handler": lambda item: get_ami_name(item["asg"]) if item.get("asg") is not None and item["asg"] and common.is_type(item["asg"], VirtualMachineScaleSet) else None
+        },
+        "AMIDescription": {
+          "display": "AMI Description",
+          "handler": lambda item: None
+        },
+        "Tags":{
+          "display": "Tags",
+          "handler": lambda item: common.generate_resource_tags_csv(tags=item["asg"].tags) if item.get("asg") is not None and item["asg"].tags is not None else None
+        },
+    }
     }

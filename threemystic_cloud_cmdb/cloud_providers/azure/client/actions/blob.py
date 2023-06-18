@@ -10,36 +10,52 @@ class cloud_cmdb_azure_client_action(base):
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   
-  
-    
-  async def _process_account_data_blob_containers(self, client:StorageManagementClient, resource_group, account_name, **kwargs):
-      try:
-        return [self.get_cloud_client().serialize_azresource(resource= item) for item in self.get_cloud_client().sdk_request(
-          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-          lambda_sdk_command=lambda: client.blob_containers.list(resource_group_name= resource_group, account_name= account_name)
-        )]
-      except:
-        return []
-
-  async def _process_account_data(self, account, loop, **kwargs):
-    client = StorageManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    storage_accounts = [ account for account in self.get_cloud_client().sdk_request(
-      tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-      lambda_sdk_command=lambda: client.storage_accounts.list()
-    )]
-    blob_containers = {
-      self.get_cloud_client().get_resource_id_from_resource(resource= account): loop.create_task(self._process_account_data_blob_containers(client= client,  resource_group= self.get_cloud_client().get_resource_group_from_resource(resource= account), account_name= self.get_cloud_client().get_resource_name_from_resource(resource= account))) for account in storage_accounts
-    }
-    
-    if len(blob_containers) > 0:
-      await asyncio.wait(blob_containers.values())
+  def _load_cmdb_general_data(self, *args, **kwargs):
     return {
-        "account": account,
-        "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
-            "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
-            "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
-            "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
-            "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
-            "extra_blobcontainers": blob_containers[self.get_cloud_client().get_resource_id_from_resource(resource= item)].result() if blob_containers.get(self.get_cloud_client().get_resource_id_from_resource(resource= item)) is not None else []
-        }, self.get_cloud_client().serialize_azresource(resource= item)) for item in storage_accounts]
+      "BlobStorage":{
+        "display":"BlobStorage",
+      }
+    }
+  
+  def _load_cmdb_column_data(self, *args, **kwargs):
+    return {
+      "BlobStorage": {
+        "Service":{
+          "display": "Service",
+          "data_key": "extra_raw_item"
+          "handler": lambda item: (item["extra_raw_item"] if item.get("extra_raw_item") is not None else item)["sku"]["name"]
+        },
+        "BucketContainer":{
+          "display": "BucketContainer",
+          "handler": lambda item: (item["extra_raw_item"] if item.get("extra_raw_item") is not None else item)["name"]  
+        },
+        "BucketName":{
+          "display": "BucketName",
+          "handler": lambda item: item["name"] if item.get("extra_raw_item") is not None else None
+        },
+        "AvgSizeLast24HR_Bytes":{
+          "display": "AvgSizeLast24HR_Bytes",
+          "handler": lambda item:  None
+        },
+        "SampleObjectClass":{
+          "display": "SampleObjectClass",
+          "handler": lambda item: None
+        },
+        "SampleObjectRetention":{
+          "display": "SampleObjectRetention",
+          "handler": lambda item: None
+        },
+        "Encryption":{
+          "display": "Encryption",
+          "handler": lambda item: None
+        },
+        "Versioning":{
+          "display": "Versioning",
+          "handler": lambda item: None
+        },
+        "Tags":{
+          "display": "Tags",
+          "handler": lambda item: common.generate_resource_tags_csv(tags=item["Tags"])
+        },
+      } 
     }

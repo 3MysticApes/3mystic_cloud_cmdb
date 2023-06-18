@@ -31,6 +31,7 @@ class cloud_cmdb_provider_base_client(base):
     
     from threemystic_cloud_data_client.cloud_providers.base_class.base_client import cloud_data_client_provider_base_client
     self._cmdb_default_parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
+      {},
       {
         "--all, -a": {
           "default": None, 
@@ -59,7 +60,8 @@ class cloud_cmdb_provider_base_client(base):
     self._action_parser = self.__get_action_parser_options().get_parser(
       parser_init_kwargs = self._default_parser_init,
       parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
-         self.get_default_parser_args(),
+        {},
+        self.get_default_parser_args(),
       ])
     )
     return self._get_action_parser()
@@ -113,7 +115,7 @@ class cloud_cmdb_provider_base_client(base):
       return None
     data_action = __import__(f'threemystic_cloud_cmdb.cloud_providers.{provider}.client.actions.{action}', fromlist=[f'cloud_cmdb_{provider}_client_action'])
     process_data_action = getattr(data_action, f'cloud_cmdb_{provider}_client_action')(
-      cloud_data_client= self,
+      cloud_cmdb= self,
       common= self.get_common(),
       logger= self.get_common().get_logger()
     )
@@ -144,6 +146,9 @@ class cloud_cmdb_provider_base_client(base):
   
   def __set_cloud_cmdb(self, cloud_cmdb, *args, **kwargs):
     self.__cloud_cmdb = cloud_cmdb
+  
+  def get_cloud_client(self, *args, **kwargs):
+    return self.__get_cloud_data_client_raw().get_cloud_client()
   
   def get_cloud_data_client(self, *args, **kwargs):
     return self.__get_cloud_data_client_raw().client(

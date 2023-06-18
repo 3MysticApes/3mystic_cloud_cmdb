@@ -21,6 +21,20 @@ class cloud_cmdb_provider_base(base):
     
     return {}
 
+  def get_cmdb_report_path(self, *args, **kwargs):
+    local_path = self.get_config_value("default_cmdb_report_path", self.default_report_path())
+    if self.get_common().helper_path().is_valid_filepath(path= local_path):
+      local_path = self.get_common().helper_path().get(path= local_path)
+      if not local_path.exists():
+        local_path.mkdir(parents= True)
+      
+      return self.get_common().helper_path().expandpath_user(path= local_path)
+    
+    return self.get_common().helper_path().expandpath_user(path= self.default_report_path())
+
+  def default_report_path(self, *args, **kwargs):
+    return self.get_common().get_threemystic_public_directory().joinpath(f"{self.get_main_directory_name()}/reports")
+  
   def config_path(self, *args, **kwargs):
     return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/config")
   
