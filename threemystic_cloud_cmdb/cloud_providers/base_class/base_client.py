@@ -148,15 +148,15 @@ class cloud_cmdb_provider_base_client(base):
     self.__cloud_cmdb = cloud_cmdb
   
   def get_cloud_client(self, *args, **kwargs):
-    return self.__get_cloud_data_client_raw().get_cloud_client()
+    return self._get_cloud_data_client_raw().get_cloud_client()
   
   def get_cloud_data_client(self, *args, **kwargs):
-    return self.__get_cloud_data_client_raw().client(
+    return self._get_cloud_data_client_raw().client(
       force_action_arguments= self.get_action_from_arguments(),
       suppress_parser_help= True,
     )
   
-  def __get_cloud_data_client_raw(self, *args, **kwargs):
+  def _get_cloud_data_client_raw(self, *args, **kwargs):
     return self.__cloud_data_client_raw
   
   def __set_cloud_data_client(self, cloud_data_client, *args, **kwargs):
