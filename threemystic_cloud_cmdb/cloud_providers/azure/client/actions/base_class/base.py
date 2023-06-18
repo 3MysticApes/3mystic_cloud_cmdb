@@ -8,6 +8,8 @@ class cloud_cmdb_azure_client_action_base(base):
     return ["Tenant Id", "Subscription ID", "Subscription"]
   
   def generate_resource_tags_csv(cls, tags, seperator=",", tag_attribute_seperator=":", **kwargs):
+    if tags is None:
+      return None
     return seperator.join([f"{key}{tag_attribute_seperator}{tag}" for key,tag in tags.items()])
   
   def generate_tag_columns(self, account, resource, *args, **kwargs):

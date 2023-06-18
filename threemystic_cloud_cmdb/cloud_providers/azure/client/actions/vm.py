@@ -11,6 +11,7 @@ class cloud_cmdb_azure_client_action(base):
       logger_name= "cloud_cmdb_azure_client_action_vm", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
+    
   
   def _load_cmdb_general_data(self, *args, **kwargs):
     return {
@@ -28,15 +29,15 @@ class cloud_cmdb_azure_client_action(base):
         },
         "InstanceID":{
           "display": "Instance ID",
-          "handler": lambda item: item["instance"].id if item.get("instance") is not None and item["instance"] and common.is_type(item["instance"], VirtualMachine) else None
+          "handler": lambda item: (item if item is not None else {}).get("extra_id")
         },
         "InstanceType":{
           "display": "Instance Type",
-          "handler": lambda item: item["instance"].hardware_profile.vm_size if item.get("instance") is not None and item["instance"] and common.is_type(item["instance"], VirtualMachine) else None
+          "handler": lambda item: (item if item is not None else {}).get("properties").get("hardwareProfile").get("vmSize")
         },
         "Platform":{
           "display": "Platform",
-          "handler": lambda item: item["instance"].storage_profile.os_disk.os_type if item.get("instance") is not None else None
+          "handler": lambda item: (item if item is not None else {}).get("properties").get("storageProfile").get("osDisk").get("osType")
         },
         "PlatformName":{
           "display": "Platform Name",
@@ -64,11 +65,11 @@ class cloud_cmdb_azure_client_action(base):
         },
         "AMIID": {
           "display": "AMI ID",
-          "handler": lambda item: get_ami_id(item["instance"]) if item.get("instance") is not None else None
+          "handler": lambda item: None # f'{item.get("properties").get("storageProfile").get("imageReference").get("publisher")}.{item.get("properties").get("storageProfile").get("imageReference").get("sku")}'
         },
         "AMIName": {
           "display": "AMI Name",
-          "handler": lambda item: get_ami_name(item["instance"]) if item.get("instance") is not None else None
+          "handler": lambda item: None # f'{item.get("properties").get("storageProfile").get("imageReference").get("publisher")}.{item.get("properties").get("storageProfile").get("imageReference").get("sku")}.{item.get("properties").get("storageProfile").get("imageReference").get("version")}'
         },
         "AMIDescription": {
           "display": "AMI Description",
@@ -76,7 +77,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "LaunchTime":{
           "display": "LaunchTime",
-          "handler": lambda item: item["resource"].created_time.replace(tzinfo=None) if item.get("resource") is not None and item.get("resource").created_time is not None else None
+          "handler": lambda item: (item if item is not None else {}).get("properties").get("timeCreated") # Check this changed
         }, 
         "Monitoring":{
           "display": "Monitoring",
@@ -92,7 +93,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "PrivateIpAddress":{
           "display": "PrivateIpAddress",
-          "handler": lambda item: get_vm_privateip(item.get("nics"))
+          "handler": lambda item: None # Pending
         },
         "ProductCodes":{
           "display": "ProductCodes",
@@ -104,11 +105,11 @@ class cloud_cmdb_azure_client_action(base):
         },
         "SubnetId":{
           "display": "SubnetId",
-          "handler": lambda item: get_vm_subnet_id(item.get("nics"))
+          "handler": lambda item: None # Pending
         },
         "VpcId":{
           "display": "VpcId",
-          "handler": lambda item: get_vm_vnet_ids(item.get("nics"))
+          "handler": lambda item: None # Pending
         },
         "Architecture":{
           "display": "Architecture",
@@ -120,7 +121,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Tags":{
           "display": "Tags",
-          "handler": lambda item: json.dumps(item["instance"].tags) if item.get("instance") is not None else None
+          "handler": lambda item: self.generate_resource_tags_csv(tags= (item if item is not None else {}).get("tags"))
         },
         "VirtualizationType":{
           "display": "VirtualizationType",
@@ -128,19 +129,19 @@ class cloud_cmdb_azure_client_action(base):
         },
         "AvailabilitySet":{
           "display": "AvailabilitySet",
-          "handler": lambda item: item["availability_set"].name if item.get("availability_set") is not None else None
+          "handler": lambda item: None # Pending 
         },
         "LBType":{
           "display": "LB Type",
-          "handler": lambda item: (f'{item["lb"][0].sku.name}-{item["lb"][0].sku.tier}') if item.get("lb") is not None and len(item.get("lb")) > 0 and item.get("lb")[0].sku is not None else None
+          "handler": lambda item: None # Pending
         },
         "LBDNSName":{
           "display": "LB DNS Name",
-          "handler": lambda item: item["public_ip"].dns_settings.fqdn if item.get("public_ip") is not None and item["public_ip"].dns_settings is not None else None
+          "handler": lambda item: None # Pending
         },
         "LBName":{
           "display": "LB Name",
-          "handler": lambda item: (item["lb"][0].name) if item.get("lb") is not None and len(item.get("lb")) > 0 else None
+          "handler": lambda item: None # Pending
         },
       } 
     }
