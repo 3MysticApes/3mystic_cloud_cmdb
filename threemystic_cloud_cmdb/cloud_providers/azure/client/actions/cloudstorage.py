@@ -5,8 +5,8 @@ from azure.mgmt.storage import StorageManagementClient
 class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
-      data_action="blob", 
-      logger_name= "cloud_cmdb_azure_client_action_blob", 
+      data_action="cloudstorage", 
+      logger_name= "cloud_cmdb_azure_client_action_cloudstorage", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   
@@ -46,11 +46,11 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Encryption":{
           "display": "Encryption",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["encryption", "services", "blob", "enabled"])
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_storage_account", "encryption", "services", "blob", "enabled"])
         },
         "Versioning":{
           "display": "Versioning",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["immutable_storage_with_versioning"])
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_storage_account", "immutable_storage_with_versioning"])
         },
         "Tags":{
           "display": "Tags",
