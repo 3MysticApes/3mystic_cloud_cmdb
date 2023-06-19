@@ -80,7 +80,8 @@ class cloud_cmdb_cli(base_process_options):
     
 
 
-    return
+    return      
+  
 
   def version_dispaly(self, *args, **kwargs): 
     from threemystic_cloud_data_client.cloud_data_client import cloud_data_client

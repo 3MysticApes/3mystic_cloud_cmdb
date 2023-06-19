@@ -21,39 +21,39 @@ class cloud_cmdb_azure_client_action(base):
       "Storage": {
         "Type":{
           "display": "StorageType",
-          "handler": lambda item: item["Storage"].get("type") if item["Storage"] is not None and item["Storage"].get("type") else None
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["type"])
         },
         "Identifier":{
           "display": "Identifier",
-          "handler": lambda item: item["Storage"].get("id") if item["Storage"] is not None and item["Storage"].get("id") else None
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_id"])
         },
         "Name":{
           "display": "Name",
-          "handler": lambda item: item["Storage"].get("name") if item["Storage"] is not None and item["Storage"].get("name") else None
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["name"])
         },
         "Size":{
           "display": "Size_Gib",
-          "handler": lambda item: item["Storage"].get("size") if item["Storage"] is not None and item["Storage"].get("size") else None
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["diskSizeGB"])
         },
         "Attached":{
           "display": "Attached",
-          "handler": lambda item: item["Storage"].get("attached") if item["Storage"] is not None and item["Storage"].get("attached") else None
+          "handler": lambda item:  self.get_item_data_value(item_data= item, value_key=["diskState"])
         },
         "GroupType":{
           "display": "GroupType",
-          "handler": lambda item: item["Storage"].get("group_type") if item["Storage"] is not None and item["Storage"].get("group_type") else None
+          "handler": lambda item: None # item["Storage"].get("group_type") if item["Storage"] is not None and item["Storage"].get("group_type") else None
         },
         "Group":{
           "display": "Group",
-          "handler": lambda item: item["Storage"].get("group") if item["Storage"] is not None and item["Storage"].get("group") else None
+          "handler": lambda item: None # item["Storage"].get("group") if item["Storage"] is not None and item["Storage"].get("group") else None
         },
         "GroupPrimary":{
           "display": "GroupPrimary",
-          "handler": lambda item: item["Storage"].get("group_primary") if item["Storage"] is not None and item["Storage"].get("group_primary") else None
+          "handler": lambda item: None # item["Storage"].get("group_primary") if item["Storage"] is not None and item["Storage"].get("group_primary") else None
         },
         "Tags":{
           "display": "Tags",
-          "handler": lambda item: common.generate_resource_tags_csv(tags=item["Tags"]) if item["Tags"] is not None else None
+          "handler": lambda item: self.generate_resource_tags_csv(tags= self.get_item_data_value(item_data= item, value_key=["tags"]))
         },
       } 
     }

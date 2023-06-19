@@ -28,23 +28,23 @@ class cloud_cmdb_azure_client_action(base):
       "Budget": {
         "last_seven_days":{
           "display": "Last7Days",
-          "handler": lambda item: item["last_seven_days"] if item.get("last_seven_days") is not None else ""
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="last_seven_days")
         },
         "month_to_date":{
           "display": "MonthToDate",
-          "handler": lambda item: item["month_to_date"] if item.get("month_to_date") is not None else ""
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="month_to_date")
         },
         "month_forecast":{
           "display": "MonthTotalForcast",
-          "handler": lambda item: item["month_forecast"] if item.get("month_forecast") is not None else ""
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="month_forecast")
         },
-        "year_to_date":{
+        "year_forecast":{
           "display": "YearToDate",
-          "handler": lambda item: item["year_to_date"] if item.get("year_to_date") is not None else ""
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="year_forecast")
         },
         "year_forecast":{
           "display": "YearTotalForcast",
-          "handler": lambda item: item["year_forecast"] if item.get("year_forecast") is not None else ""
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="year_forecast")
         },
       } 
     }

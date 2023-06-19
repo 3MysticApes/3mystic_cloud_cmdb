@@ -53,11 +53,11 @@ class cloud_cmdb_azure_client_action(base):
         },        
         "ASGArn": {
           "display": {"default": "ID", "cmdb":"ASG Arn"},
-          "handler": lambda item: (item if item is not None else {}).get("extra_id")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id")
         },
         "ASGName": {
           "display": "Name",
-          "handler": lambda item: (item if item is not None else {}).get("name")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="name")
         },
         "ASGMin": {
           "display": "Min",
@@ -69,7 +69,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "ASGMaxSize": {
           "display": "Max",
-          "handler": lambda item: (item if item is not None else {}).get("sku").get("capacity")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["sku", "capacity"])
         },
         "ASGEffective": {
           "display": "Effective",
@@ -77,15 +77,15 @@ class cloud_cmdb_azure_client_action(base):
         },
         "InstanceType": {
           "display": "Instance Type",
-          "handler": lambda item: (item if item is not None else {}).get("sku").get("name")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["sku", "name"])
         },
         "AMIID": {
           "display": "AMI ID",
-          "handler": lambda item: None # f'{item.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("publisher")}.{item.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("sku")}.{item.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("version")}'
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])]) 
         },
         "AMIName": {
           "display": "AMI Name",
-          "handler": lambda item: None # f'{item.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("publisher")}.{item.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("sku")}'
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","version"])])  
         },
         "AMIDescription": {
           "display": "AMI Description",
@@ -93,7 +93,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Tags":{
           "display": "Tags",
-          "handler": lambda item: self.generate_resource_tags_csv(tags= (item if item is not None else {}).get("tags"))
+          "handler": lambda item: self.generate_resource_tags_csv(tags= self.get_item_data_value(item_data= item, value_key=["tags"]))
         },
       }
     }

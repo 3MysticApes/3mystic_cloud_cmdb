@@ -86,7 +86,7 @@ class cloud_cmdb_azure_client_action_base(base):
     ]
 
   # def _load_cmdb_general_data(self, *args, **kwargs):
-  #   raise self.get_common().exception(
+  #   raise self.get_common().exception().exception(
   #     exception_type = "function"
   #   ).not_implemented(
   #     logger = self.get_common().get_logger(),

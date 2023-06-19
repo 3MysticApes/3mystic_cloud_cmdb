@@ -29,15 +29,15 @@ class cloud_cmdb_azure_client_action(base):
         },
         "InstanceID":{
           "display": "Instance ID",
-          "handler": lambda item: (item if item is not None else {}).get("extra_id")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id")
         },
         "InstanceType":{
           "display": "Instance Type",
-          "handler": lambda item: (item if item is not None else {}).get("properties").get("hardwareProfile").get("vmSize")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["properties","hardwareProfile","vmSize"])
         },
         "Platform":{
           "display": "Platform",
-          "handler": lambda item: (item if item is not None else {}).get("properties").get("storageProfile").get("osDisk").get("osType")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["properties","storageProfile","osDisk","osType"])
         },
         "PlatformName":{
           "display": "Platform Name",
@@ -65,11 +65,11 @@ class cloud_cmdb_azure_client_action(base):
         },
         "AMIID": {
           "display": "AMI ID",
-          "handler": lambda item: None # f'{item.get("properties").get("storageProfile").get("imageReference").get("publisher")}.{item.get("properties").get("storageProfile").get("imageReference").get("sku")}'
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties","storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties","storageProfile","imageReference","sku"])]) 
         },
         "AMIName": {
           "display": "AMI Name",
-          "handler": lambda item: None # f'{item.get("properties").get("storageProfile").get("imageReference").get("publisher")}.{item.get("properties").get("storageProfile").get("imageReference").get("sku")}.{item.get("properties").get("storageProfile").get("imageReference").get("version")}'
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties","storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties","storageProfile","imageReference","sku"]), self.get_item_data_value(item_data= item, value_key=["properties","storageProfile","imageReference","version"])])
         },
         "AMIDescription": {
           "display": "AMI Description",
@@ -77,7 +77,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "LaunchTime":{
           "display": "LaunchTime",
-          "handler": lambda item: (item if item is not None else {}).get("properties").get("timeCreated") # Check this changed
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_resource","createdTime"])
         }, 
         "Monitoring":{
           "display": "Monitoring",
@@ -121,7 +121,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Tags":{
           "display": "Tags",
-          "handler": lambda item: self.generate_resource_tags_csv(tags= (item if item is not None else {}).get("tags"))
+          "handler": lambda item: self.generate_resource_tags_csv(tags= self.get_item_data_value(item_data= item, value_key=["tags"]))
         },
         "VirtualizationType":{
           "display": "VirtualizationType",
