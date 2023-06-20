@@ -101,7 +101,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "PublicDnsName":{
           "display": "PublicDnsName",
-          "handler": lambda item: None
+          "handler": lambda item: self._get_vm_public_ips_fqdn(vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"]), vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"]))
         },
         "SubnetId":{
           "display": "SubnetId",
@@ -129,7 +129,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "AvailabilitySet":{
           "display": "AvailabilitySet",
-          "handler": lambda item: None # Pending 
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_availability_set", "name"])
         },
         "LBType":{
           "display": "LB Type",
@@ -160,9 +160,13 @@ class cloud_cmdb_azure_client_action(base):
     return vnet_ids
   
   def _get_vm_subnets(self, vm_nics, *args, **kwargs):
-    subnets = []
+    if hasattr(self, "_vm_subnets"):
+      return self._vm_subnets
+
     if vm_nics is None:
-      return subnets
+      return []
+    
+    self._vm_subnets = []
     for nic in vm_nics:
       ip_configurations = self.get_item_data_value(item_data= nic, value_key=["properties","ip_configurations"])
       if ip_configurations is None:
@@ -171,50 +175,80 @@ class cloud_cmdb_azure_client_action(base):
       for ip_config in ip_configurations:
         if ip_config.get("subnet") is None:
           continue
-        subnets.append(self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.get("subnet")))
+        self._vm_subnets.append(self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.get("subnet")))
     
-    return subnets
+    return self._get_vm_subnets(vm_nics= vm_nics)
   
   def _get_vm_private_ips(self, vm_nics, *args, **kwargs):
-    private_ips = []
+
     if vm_nics is None:
-      return private_ips
+      return []
+    
+    
+    return [
+      ip_config.get("private_ip_address") 
+      for ip_config in self._get_vm_nic_ip_configurations(vm_nics= vm_nics)
+      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= ip_config.get("private_ip_address") )
+    ]
+  
+  def _get_vm_nic_ip_configurations(self, vm_nics, *args, **kwargs):    
+    if hasattr(self, "_vm_nic_ip_configurations"):
+      return self._vm_nic_ip_configurations
+    
+    if vm_nics is None:
+      return []
+    
+    self._vm_nic_ip_configurations = []
     for nic in vm_nics:
       ip_configurations = self.get_item_data_value(item_data= nic, value_key=["properties","ip_configurations"])
       if ip_configurations is None:
         continue
       
-      for ip_config in ip_configurations:
-        if ip_config.get("private_ip_address") is None:
-          continue
-        private_ips.append(ip_config.get("private_ip_address"))
+      self._vm_nic_ip_configurations += [ip_config for ip_config in ip_configurations]
+
     
-    return private_ips
+    return self._get_vm_nic_ip_configurations(vm_nics= vm_nics, *args, **kwargs)
+  
+  def _get_vm_public_ips_fqdn(self, vm_nics, vm_load_balancers, *args, **kwargs):
+    return [
+      public_ip.dns_settings.fqdn
+      for public_ip in self._get_vm_public_ips_ip(vm_nics= vm_nics, vm_load_balancers= vm_load_balancers)
+    ]
+  
+  def _get_vm_public_ips_ip(self, vm_nics, vm_load_balancers, *args, **kwargs):
+    return [
+      public_ip.ip_address
+      for public_ip in self._get_vm_public_ips_ip(vm_nics= vm_nics, vm_load_balancers= vm_load_balancers)
+    ]       
+
+    return public_ips
   
   def _get_vm_public_ips(self, vm_nics, vm_load_balancers, *args, **kwargs):
-    public_ips = []
+    if hasattr(self, "_vm_public_ips"):
+      return self._vm_public_ips
+
     if vm_nics is None and vm_load_balancers is None:
-      return public_ips
+      return []
     
     # ip_address
     # dns_settings.fqdn
-
+    self._vm_public_ips = []
     if vm_nics is not None:
       for nic in vm_nics:
         if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
           continue
 
-        public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
+        self._vm_public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
 
         
     
-    # if vm_load_balancers is not None:
-    #   for load_balancer in vm_load_balancers:
-    #     if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
-    #       continue
+    if vm_load_balancers is not None:
+      for load_balancer in vm_load_balancers:
+        if self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]) is None:
+          continue
 
-    #     public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
+        self._vm_public_ips.append(self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]))
         
 
     
-    return public_ips
+    return self._get_vm_public_ips(vm_nics= vm_nics, vm_load_balancers= vm_load_balancers, *args, **kwargs)
