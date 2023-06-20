@@ -93,7 +93,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "PrivateIpAddress":{
           "display": "PrivateIpAddress",
-          "handler": lambda item: None # Pending
+          "handler": lambda item: self.get_vm_private_ips(vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"]))
         },
         "ProductCodes":{
           "display": "ProductCodes",
@@ -105,11 +105,11 @@ class cloud_cmdb_azure_client_action(base):
         },
         "SubnetId":{
           "display": "SubnetId",
-          "handler": lambda item: None # Pending
+          "handler": lambda item: self._get_vm_subnets(vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"]))
         },
         "VpcId":{
           "display": "VpcId",
-          "handler": lambda item: None # Pending
+          "handler": lambda item: self._get_vm_vnets(vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"]))
         },
         "Architecture":{
           "display": "Architecture",
@@ -145,3 +145,76 @@ class cloud_cmdb_azure_client_action(base):
         },
       } 
     }
+  
+  def _get_vm_vnets(self, vm_nics, *args, **kwargs):
+    subnets = self.get_vm_subnets(vm_nics= vm_nics)
+
+    if subnets is None:
+      return []
+    
+    vnet_ids = []
+    for subnet in subnets:
+      subnet_lower = self.get_common().helper_type().string().set_case(string_value= subnet, case= "lower")
+      vnet_ids.append(subnet_lower[0:subnet_lower.rfind("/subnets/")])
+    
+    return vnet_ids
+  
+  def _get_vm_subnets(self, vm_nics, *args, **kwargs):
+    subnets = []
+    if vm_nics is None:
+      return subnets
+    for nic in vm_nics:
+      ip_configurations = self.get_item_data_value(item_data= nic, value_key=["properties","ip_configurations"])
+      if ip_configurations is None:
+        continue
+      
+      for ip_config in ip_configurations:
+        if ip_config.get("subnet") is None:
+          continue
+        subnets.append(self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.get("subnet")))
+    
+    return subnets
+  
+  def _get_vm_private_ips(self, vm_nics, *args, **kwargs):
+    private_ips = []
+    if vm_nics is None:
+      return private_ips
+    for nic in vm_nics:
+      ip_configurations = self.get_item_data_value(item_data= nic, value_key=["properties","ip_configurations"])
+      if ip_configurations is None:
+        continue
+      
+      for ip_config in ip_configurations:
+        if ip_config.get("private_ip_address") is None:
+          continue
+        private_ips.append(ip_config.get("private_ip_address"))
+    
+    return private_ips
+  
+  def _get_vm_public_ips(self, vm_nics, vm_load_balancers, *args, **kwargs):
+    public_ips = []
+    if vm_nics is None and vm_load_balancers is None:
+      return public_ips
+    
+    # ip_address
+    # dns_settings.fqdn
+
+    if vm_nics is not None:
+      for nic in vm_nics:
+        if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
+          continue
+
+        public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
+
+        
+    
+    # if vm_load_balancers is not None:
+    #   for load_balancer in vm_load_balancers:
+    #     if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
+    #       continue
+
+    #     public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
+        
+
+    
+    return public_ips
