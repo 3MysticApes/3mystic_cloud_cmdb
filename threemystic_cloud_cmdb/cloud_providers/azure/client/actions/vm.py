@@ -133,7 +133,11 @@ class cloud_cmdb_azure_client_action(base):
         },
         "LBType":{
           "display": "LB Type",
-          "handler": lambda item: None # Pending
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= "-", 
+            str_array= [
+              self.get_item_data_value(item_data= item, value_key=["extra_load_balancers", "load_balancer", "sku", "name"]),
+              self.get_item_data_value(item_data= item, value_key=["extra_load_balancers", "load_balancer", "sku", "tier"])
+            ])
         },
         "LBDNSName":{
           "display": "LB DNS Name",
@@ -141,7 +145,10 @@ class cloud_cmdb_azure_client_action(base):
         },
         "LBName":{
           "display": "LB Name",
-          "handler": lambda item: None # Pending
+          "handler": lambda item: [
+            self.get_item_data_value(item_data= item_lb, value_key=["extra_load_balancers", "name"])
+            for item_lb in self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])
+          ]
         },
       } 
     }
@@ -222,7 +229,41 @@ class cloud_cmdb_azure_client_action(base):
     ]       
 
     return public_ips
+
   
+  def _get_vm_public_ips_vm_load_balancers(self, vm_load_balancers, *args, **kwargs):
+    if hasattr(self, "_vm_load_balancers"):
+      return self._vm_load_balancers
+
+    if vm_load_balancers is None:
+      return []
+
+    self._vm_load_balancers = []
+    for load_balancer in vm_load_balancers:
+      if self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]) is None:
+        continue
+
+      self._vm_load_balancers.append(self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]))
+
+    return self._get_vm_public_ips_vm_load_balancers(vm_load_balancers= vm_load_balancers, *args, **kwargs)
+
+  
+  def _get_vm_public_ips_vm_nics(self, vm_nics, *args, **kwargs):
+    if hasattr(self, "_vm_nic_public_ips"):
+      return self._vm_nic_public_ips
+
+    if vm_nics is None:
+      return []
+
+    self._vm_nic_public_ips = []
+    for nic in vm_nics:
+      if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
+        continue
+
+      self._vm_public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
+
+    return self._get_vm_public_ips_vm_nics(vm_nics= vm_nics, *args, **kwargs)
+
   def _get_vm_public_ips(self, vm_nics, vm_load_balancers, *args, **kwargs):
     if hasattr(self, "_vm_public_ips"):
       return self._vm_public_ips
@@ -232,23 +273,10 @@ class cloud_cmdb_azure_client_action(base):
     
     # ip_address
     # dns_settings.fqdn
-    self._vm_public_ips = []
-    if vm_nics is not None:
-      for nic in vm_nics:
-        if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
-          continue
-
-        self._vm_public_ips.append(self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]))
-
-        
-    
-    if vm_load_balancers is not None:
-      for load_balancer in vm_load_balancers:
-        if self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]) is None:
-          continue
-
-        self._vm_public_ips.append(self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]))
-        
+    self._vm_public_ips = (
+      self._get_vm_public_ips_vm_nics(vm_nic= vm_nic) +
+      self._get_vm_public_ips_vm_load_balancers(vm_load_balancers= vm_load_balancers)
+    )        
 
     
     return self._get_vm_public_ips(vm_nics= vm_nics, vm_load_balancers= vm_load_balancers, *args, **kwargs)
