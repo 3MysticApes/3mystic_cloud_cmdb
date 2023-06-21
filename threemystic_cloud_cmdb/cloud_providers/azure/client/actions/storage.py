@@ -11,14 +11,14 @@ class cloud_cmdb_azure_client_action(base):
   
   def _load_cmdb_general_data(self, *args, **kwargs):
     return {
-      "Storage":{
+      self.get_cmdb_data_action():{
         "display":"Storage",
       }
     }
   
   def _load_cmdb_column_data(self, *args, **kwargs):
     return {
-      "Storage": {
+      self.get_cmdb_data_action(): {
         "Type":{
           "display": "StorageType",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["type"])

@@ -41,7 +41,11 @@ class cloud_cmdb_provider_base_client(base):
           "action": 'store_const'
         }
       },      
-      cloud_data_client_provider_base_client.get_default_parser_args(),
+      {
+        arg_key:args
+        for arg_key, args in cloud_data_client_provider_base_client.get_default_parser_args().items()
+        if args.get("const") != "vmss"
+      },
     ])
     return self.get_default_parser_args()
 
@@ -100,19 +104,27 @@ class cloud_cmdb_provider_base_client(base):
       return
 
     try:
-      self._data_action_data = self._process_data_action(
+      action = self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments().get('data_action') , case= "lower")
+      self._data_action_data = {
+        "default": action,
+        action: self._process_data_action(
         provider = self.get_provider(),
-        action= self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments().get('data_action') , case= "lower"), 
+        action= action, 
         *args, **kwargs)
+      }
       
     except Exception as err:
       print(f"The action {self.get_action_from_arguments().get('data_action')} is unknown")
       self.get_common().get_logger().exception(f"The action {self.get_action_from_arguments() .get('data_action')} is unknown", extra={"exception": err})
       self._get_action_parser().print_help()
   
-  def _process_data_action(self, provider, action, *args, **kwargs):    
+  def _process_data_action(self, action, provider, *args, **kwargs):    
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):
       return None
+    
+    if provider is None:
+      provider = self.get_provider()
+
     data_action = __import__(f'threemystic_cloud_cmdb.cloud_providers.{provider}.client.actions.{action}', fromlist=[f'cloud_cmdb_{provider}_client_action'])
     process_data_action = getattr(data_action, f'cloud_cmdb_{provider}_client_action')(
       cloud_cmdb= self,
@@ -121,9 +133,21 @@ class cloud_cmdb_provider_base_client(base):
     )
     return process_data_action
   
-  def get_data_action(self, *args, **kwargs):
+  def get_data_action(self, action = None, *args, **kwargs):
     if hasattr(self, "_data_action_data"):
-      return self._data_action_data
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):
+        return self._data_action_data.get(self._data_action_data["default"])
+      
+      if self._data_action_data.get(action) is not None:
+        return self._data_action_data.get(self._data_action_data["default"])
+      
+      self._data_action_data[action] = self._process_data_action(
+        provider = self.get_provider(),
+        action= action, 
+        *args, **kwargs)
+      return self.get_data_action(action= action, *args, **kwargs)
+
+      
     
     return None
   
@@ -154,6 +178,7 @@ class cloud_cmdb_provider_base_client(base):
     return self._get_cloud_data_client_raw().client(
       force_action_arguments= self.get_action_from_arguments(),
       suppress_parser_help= True,
+      *args, **kwargs
     )
   
   def _get_cloud_data_client_raw(self, *args, **kwargs):
@@ -163,7 +188,7 @@ class cloud_cmdb_provider_base_client(base):
     self.__cloud_data_client_raw = cloud_data_client
     
   
-  def get_cloud_client(self, *args, **kwargs):
+  def get_cloud_client(self, data_action = None, *args, **kwargs):
     return self.get_cloud_data_client().get_cloud_client()
 
   

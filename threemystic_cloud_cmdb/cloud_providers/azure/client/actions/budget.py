@@ -15,7 +15,7 @@ class cloud_cmdb_azure_client_action(base):
   
   def _load_cmdb_general_data(self, *args, **kwargs):
     return {
-      "Budget":{
+      self.get_cmdb_data_action():{
         "display":"Budget",
         "include_region": False,
         "include_resourcegroup": False,
@@ -25,7 +25,7 @@ class cloud_cmdb_azure_client_action(base):
   
   def _load_cmdb_column_data(self, *args, **kwargs):
     return {
-      "Budget": {
+      self.get_cmdb_data_action(): {
         "last_seven_days":{
           "display": "Last7Days",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key="last_seven_days")

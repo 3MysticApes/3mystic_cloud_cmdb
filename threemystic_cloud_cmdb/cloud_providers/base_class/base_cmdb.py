@@ -11,6 +11,7 @@ class cloud_cmdb_provider_base_cmdb(base):
     self._set_data_start(*args, **kwargs)
     self._set_cloud_cmdb(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
+    self.__set_cmdb_data_action(*args, **kwargs)
 
   @abc.abstractclassmethod
   def generate_resource_tags_csv(self, tags, seperator=",", tag_attribute_seperator=":", *args, **kwargs):
@@ -122,7 +123,7 @@ class cloud_cmdb_provider_base_cmdb(base):
   
   def _get_data_action_by_key(self, *args, **kwargs):
     return {
-      list(self.get_workbook_general_data().keys())[0]: self._get_cloud_cmdb_raw().get_cloud_data_client().get_data_action()
+      action: self._get_cloud_cmdb_raw().get_cloud_data_client().get_data_action(action= action) for action in list(self.get_workbook_general_data().keys())
     }
   
   async def _generate_report_data(self, pool, loop= None, *args, **kwargs):  
@@ -183,6 +184,12 @@ class cloud_cmdb_provider_base_cmdb(base):
       self.get_tag_report_columns(sheet_key= sheet_key, *args, **kwargs)
     )
     return self.get_excel_workbook(sheet_key= sheet_key, *args, **kwargs)
+
+  def get_cmdb_data_action(self, *args, **kwargs):
+    return self.cmdb_data_action
+  
+  def __set_cmdb_data_action(self, data_action, *args, **kwargs):
+    self.cmdb_data_action = data_action
 
   def get_data_start(self, *args, **kwargs):
     return self.__data_start

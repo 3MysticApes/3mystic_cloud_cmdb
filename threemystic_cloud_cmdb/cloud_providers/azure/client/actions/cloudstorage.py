@@ -12,14 +12,14 @@ class cloud_cmdb_azure_client_action(base):
   
   def _load_cmdb_general_data(self, *args, **kwargs):
     return {
-      "BlobStorage":{
+      self.get_cmdb_data_action():{
         "display":"BlobStorage",
       }
     }
   
   def _load_cmdb_column_data(self, *args, **kwargs):
     return {
-      "BlobStorage": {
+      self.get_cmdb_data_action(): {
         "Service":{
           "display": "Service",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_storage_account","sku","name"])

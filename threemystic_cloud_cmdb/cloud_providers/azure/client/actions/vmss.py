@@ -13,30 +13,6 @@ class cloud_cmdb_azure_client_action(base):
       *args, **kwargs)
     
   
-  def get_vmss_ami_name(vmss): 
-    if vmss.get("virtualMachineProfile") is None:
-      return None
-    
-    if vmss.get("virtualMachineProfile").get("storageProfile") is None:
-      return None
-    
-    if vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference") is None:
-      return None
-    
-    return f'{vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("publisher")}.{vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("sku")}'
-  
-  def get_vmss_ami_id(vmss): 
-    if vmss.get("virtualMachineProfile") is None:
-      return None
-    
-    if vmss.get("virtualMachineProfile").get("storageProfile") is None:
-      return None
-    
-    if vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference") is None:
-      return None
-    
-    return f'{vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("publisher")}.{vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("sku")}.{vmss.get("virtualMachineProfile").get("storageProfile").get("imageReference").get("version")}'
-  
   def _load_cmdb_general_data(self, *args, **kwargs):
     return {
       "ASG":{

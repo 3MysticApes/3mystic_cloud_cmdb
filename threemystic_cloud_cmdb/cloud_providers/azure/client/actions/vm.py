@@ -15,14 +15,67 @@ class cloud_cmdb_azure_client_action(base):
   
   def _load_cmdb_general_data(self, *args, **kwargs):
     return {
-      "LongLived":{
+      "vmss":{
+        "display":"ASG",
+      },
+      self.get_cmdb_data_action():{
         "display":"LongLived",
       }
     }
   
   def _load_cmdb_column_data(self, *args, **kwargs):
-    return {
-      "LongLived": {
+    return {      
+      "vmss": {
+        "AutoScalingGroup":{
+          "display": "AutoScalingGroup",
+          "handler": lambda item: "VMSS"
+        },        
+        "ASGArn": {
+          "display": {"default": "ID", "cmdb":"ASG Arn"},
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id")
+        },
+        "ASGName": {
+          "display": "Name",
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="name")
+        },
+        "ASGMin": {
+          "display": "Min",
+          "handler": lambda item: None
+        },
+        "ASGDesiredCapacity": {
+          "display": "Desired",
+          "handler": lambda item: None
+        },
+        "ASGMaxSize": {
+          "display": "Max",
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["sku", "capacity"])
+        },
+        "ASGEffective": {
+          "display": "Effective",
+          "handler": lambda item: None
+        },
+        "InstanceType": {
+          "display": "Instance Type",
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["sku", "name"])
+        },
+        "AMIID": {
+          "display": "AMI ID",
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])]) 
+        },
+        "AMIName": {
+          "display": "AMI Name",
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","version"])])  
+        },
+        "AMIDescription": {
+          "display": "AMI Description",
+          "handler": lambda item: None
+        },
+        "Tags":{
+          "display": "Tags",
+          "handler": lambda item: self.generate_resource_tags_csv(tags= self.get_item_data_value(item_data= item, value_key=["tags"]))
+        },
+      },
+      self.get_cmdb_data_action(): {
         "EC2":{
           "display": "EC2",
           "handler": lambda item: "VM"
@@ -30,8 +83,7 @@ class cloud_cmdb_azure_client_action(base):
         "InstanceID":{
           "display": "Instance ID",
           "handler": lambda item: self.get_cloud_client().get_resource_id_from_resource(
-              resource= self.get_item_data_value(item_data= item, value_key="extra_id")),
-            include_resource_group= self.get_workbook_general_data(sheet_key= "LongLived").get("include_resourcegroup")
+              resource= self.get_item_data_value(item_data= item, value_key="extra_id"))
         },
         "InstanceType":{
           "display": "Instance Type",
