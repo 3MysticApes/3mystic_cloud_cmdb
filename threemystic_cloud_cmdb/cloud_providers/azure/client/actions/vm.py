@@ -272,6 +272,9 @@ class cloud_cmdb_azure_client_action(base):
     public_fqdn = []
     for public_ip in self._get_vm_public_ips(vm= vm, vm_nics= vm_nics, vm_load_balancers= vm_load_balancers):
       if self.get_item_data_value(item_data= public_ip, value_key=["properties","dnsSettings", "fqdn"]) is None:
+        if self.get_item_data_value(item_data= public_ip, value_key=["properties","ipAddress"]) is not None:
+          public_fqdn.append(self.get_item_data_value(item_data= public_ip, value_key=["properties","ipAddress"]))
+
         continue
       public_fqdn.append(self.get_item_data_value(item_data= public_ip, value_key=["properties","dnsSettings", "fqdn"]))
 
