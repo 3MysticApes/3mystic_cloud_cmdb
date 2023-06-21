@@ -79,17 +79,17 @@ class cloud_cmdb_provider_base_cmdb(base):
     print(f'Report saved at: {report_path}')
     self._get_excel().save(report_path)
 
-  def get_report_default_row(self, account, resource = None,  *args, **kwargs):
+  def get_report_default_row(self, account, sheet_key, resource = None,  *args, **kwargs):
     default_row = self._get_report_default_row(account= account)
 
-    if self.get_workbook_general_data().get("include_resourcegroup") == True:
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_resourcegroup") == True:
       default_row.append(self.get_common().helper_type().string().join(",", resource.get("extra_resourcegroups")))
 
-    if self.get_workbook_general_data().get("include_environment") == True:
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_environment") == True:
       default_row.append(self.get_account_environment(account= account, resource= resource))
 
-    if self.get_workbook_general_data().get("include_region") == True:
-      default_row.append(resource.get("extra_region") if resource is not None else None)
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_region") == True:
+      default_row.append(self.get_cloud_client().get_azresource_location(resource= resource))
     
     return default_row
 
@@ -142,6 +142,7 @@ class cloud_cmdb_provider_base_cmdb(base):
         for report_data_item in report_data:
           self.get_excel_workbook(sheet_key= sheet_key).append(
             self.get_report_default_row(
+              sheet_key= sheet_key,
               account= report_data_item.get("extra_account"), 
               resource= report_data_item,  
               region= report_data_item.get("extra_region"), 
@@ -171,15 +172,15 @@ class cloud_cmdb_provider_base_cmdb(base):
       self._workbook_excel_data = {}
 
     self._workbook_excel_data[sheet_key] = self._get_excel().create_sheet(
-      title= self.get_workbook_general_data()[sheet_key]["display"]
+      title= self.get_workbook_general_data(sheet_key= sheet_key)["display"]
     )    
       
     self._workbook_excel_data[sheet_key].append(
-      self.get_default_report_columns(*args, **kwargs) +
+      self.get_default_report_columns(sheet_key= sheet_key, *args, **kwargs) +
       [
         self.get_workbook_column_header_display(info_column= column) for _, column in self.get_workbook_columns()[sheet_key].items()
       ] +
-      self.get_tag_report_columns(*args, **kwargs)
+      self.get_tag_report_columns(sheet_key= sheet_key, *args, **kwargs)
     )
     return self.get_excel_workbook(sheet_key= sheet_key, *args, **kwargs)
 
@@ -222,12 +223,15 @@ class cloud_cmdb_provider_base_cmdb(base):
   async def _pre_load_main_process(self, *args, **kwargs):
     pass
   
-  def get_workbook_general_data(self, *args, **kwargs):
+  def get_workbook_general_data(self, sheet_key = None, *args, **kwargs):
     if hasattr(self, "_workbook_general_data"):
-      return self._workbook_general_data
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= sheet_key):
+        return self._workbook_general_data
+      return self._workbook_general_data.get(sheet_key)
+        
     
     self._set_workbook_general_data()
-    return self.get_workbook_general_data(*args, **kwargs)
+    return self.get_workbook_general_data(sheet_key= sheet_key, *args, **kwargs)
   
   def _set_workbook_general_data(self, *args, **kwargs):
     self._workbook_general_data = self._generate_workbook_data()
@@ -318,21 +322,21 @@ class cloud_cmdb_provider_base_cmdb(base):
         message = f"Unknown column_display: {self.get_common().helper_json().dumps(data= column_display)}"
       )
   
-  def get_default_report_columns(self, *args, **kwargs):
+  def get_default_report_columns(self, sheet_key, *args, **kwargs):
 
     default_columns = []
-    if self.get_workbook_general_data().get("include_resourcegroup") == True:
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_resourcegroup") == True:
       default_columns.append("ResourceGroup")
-    if self.get_workbook_general_data().get("include_environment") == True:
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_environment") == True:
       default_columns.append("Environment")
-
-    if self.get_workbook_general_data().get("include_region") == False:
+    
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_region") == True:
       return self.get_default_columns() + ["Region"] + default_columns
 
     return self.get_default_columns() + default_columns
   
-  def get_tag_report_columns(self, *args, **kwargs):
-    if self.get_workbook_general_data().get("include_requiredtags") == True:
+  def get_tag_report_columns(self, sheet_key, *args, **kwargs):
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_requiredtags") == True:
       return []
 
     # the plan is the required tags will be in the config
