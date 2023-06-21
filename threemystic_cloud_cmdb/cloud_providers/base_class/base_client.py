@@ -97,7 +97,11 @@ class cloud_cmdb_provider_base_client(base):
     if self.get_data_action() is None:
       return
     
-    asyncio.run(self.get_data_action().main())
+    for action_key, action in self.get_data_action_raw().items():
+      if action_key == "default":
+        continue
+      
+      asyncio.run(action.main())
 
   def _set_data_action(self, *args, **kwargs):
     if self.get_action_from_arguments() is None or len(self.get_action_from_arguments()) < 1:
@@ -105,16 +109,26 @@ class cloud_cmdb_provider_base_client(base):
 
     try:
       action = self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments().get('data_action') , case= "lower")
+      if action != "all":
+        self._data_action_data = {
+          "default": action,
+          action: self._process_data_action(
+          provider = self.get_provider(),
+          action= action, 
+          *args, **kwargs)
+        }
+        return
+      
       self._data_action_data = {
-        "default": action,
-        action: self._process_data_action(
-        provider = self.get_provider(),
-        action= action, 
-        *args, **kwargs)
+        arg_key: self._process_data_action(
+          provider = self.get_provider(),
+          action= arg.get("const"), 
+          *args, **kwargs)
+        for arg_key, arg in self.get_default_parser_args().items() if arg.get("const") != "all"
       }
+      self._data_action_data["default"] = list(self._data_action_data.keys())[0]
       
     except Exception as err:
-      print(f"The action {self.get_action_from_arguments().get('data_action')} is unknown")
       self.get_common().get_logger().exception(f"The action {self.get_action_from_arguments() .get('data_action')} is unknown", extra={"exception": err})
       self._get_action_parser().print_help()
   
@@ -133,23 +147,26 @@ class cloud_cmdb_provider_base_client(base):
     )
     return process_data_action
   
-  def get_data_action(self, action = None, *args, **kwargs):
+  def get_data_action_raw(self,  *args, **kwargs):
     if hasattr(self, "_data_action_data"):
-      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):
-        return self._data_action_data.get(self._data_action_data["default"])
-      
-      if self._data_action_data.get(action) is not None:
-        return self._data_action_data.get(self._data_action_data["default"])
-      
-      self._data_action_data[action] = self._process_data_action(
-        provider = self.get_provider(),
-        action= action, 
-        *args, **kwargs)
-      return self.get_data_action(action= action, *args, **kwargs)
+      return self._data_action_data
 
+    return {}
+  
+  def get_data_action(self, action = None, *args, **kwargs):
+
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):
+      return self.get_data_action_raw().get(self._data_action_data["default"])
       
-    
-    return None
+    if self.get_data_action_raw().get(action) is not None:
+      return self.get_data_action_raw().get(action)
+      
+    self.get_data_action_raw[action] = self._process_data_action(
+      provider = self.get_provider(),
+      action= action, 
+      *args, **kwargs)
+    return self.get_data_action(action= action, *args, **kwargs)
+
   
   async def process_multiple_data_actions(self, provider, actions, *args, **kwargs):
     if actions == "all":
