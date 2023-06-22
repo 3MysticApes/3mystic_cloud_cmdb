@@ -34,7 +34,7 @@ class cloud_cmdb_general_config_step_1(base):
     #   scopes=['https://graph.microsoft.com/.default'])
     # adapter = GraphRequestAdapter(auth_provider= auth_provider)
     # graph_client = GraphServiceClient(request_adapter= adapter)
-
+    
     # response_test = asyncio.run(graph_client.me.get())
     # print(response_test.display_name)
     # graph_client = GraphServiceClient(credentials= cloud_data_client.get_cloud_client().get_tenant_credential(tenant= "425a5546-5a6e-4f1b-ab62-23d91d07d893"), scopes=['https://graph.microsoft.com/.default'])
