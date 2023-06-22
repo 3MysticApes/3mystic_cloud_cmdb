@@ -11,6 +11,47 @@ class cloud_cmdb_general_config_step_1(base):
   def step(self, *args, **kwargs):
     if not super().step(run_base_config= True):
       return
+
+    ########################################
+    #
+    # Testing
+    #
+    ########################################
+
+    # from msgraph import GraphServiceClient, GraphRequestAdapter
+    # from threemystic_cloud_data_client.cloud_data_client import cloud_data_client
+    # from kiota_authentication_azure.azure_identity_authentication_provider import AzureIdentityAuthenticationProvider
+    # import asyncio
+    # from azure.identity import AzureCliCredential
+    # data_client = cloud_data_client(
+    #   provider= "azure",
+    #   logger= self.get_logger(), 
+    #   common= self.get_common()
+    # ).client()
+
+    # auth_provider = AzureIdentityAuthenticationProvider(
+    #   credentials= AzureCliCredential(tenant_id= "425a5546-5a6e-4f1b-ab62-23d91d07d893"),
+    #   scopes=['https://graph.microsoft.com/.default'])
+    # adapter = GraphRequestAdapter(auth_provider= auth_provider)
+    # graph_client = GraphServiceClient(request_adapter= adapter)
+
+    # response_test = asyncio.run(graph_client.me.get())
+    # print(response_test.display_name)
+    # graph_client = GraphServiceClient(credentials= cloud_data_client.get_cloud_client().get_tenant_credential(tenant= "425a5546-5a6e-4f1b-ab62-23d91d07d893"), scopes=['https://graph.microsoft.com/.default'])
+    # print(data_client.get_cloud_client().get_tenant_credential(tenant= "425a5546-5a6e-4f1b-ab62-23d91d07d893"))
+    # print(graph_client.groups.get())
+    # response_test = asyncio.run(graph_client.users.by_user_id(user_id= "ea89385e-bf47-4be0-9906-7cf72cddbf7a").get())
+    # for test in response_test:
+    #   print(response_test)
+    # print(response_test.id)
+    # print(graph_client.me.)
+    return
+    
+    ########################################
+    #
+    # Testing
+    #
+    ########################################
     
     response = self.get_common().generate_data().generate(
       generate_data_config = {
@@ -60,10 +101,10 @@ class cloud_cmdb_general_config_step_1(base):
       print("-----------------------------")    
     
     
-    # from threemystic_cloud_cmdb.cloud_providers.general.config.step_2 import cloud_cmdb_general_config_step_2 as step
-    # next_step = step(common= self.get_common(), logger= self.get_logger())
+    from threemystic_cloud_cmdb.cloud_providers.general.config.step_2 import cloud_cmdb_general_config_step_2 as step
+    next_step = step(common= self.get_common(), logger= self.get_logger())
     
-    # next_step.step()
+    next_step.step()
 
     
     

@@ -10,6 +10,9 @@ class cloud_cmdb_provider_base(base):
   
   def get_main_directory_name(self, *args, **kwargs):
     return "cmdb"  
+  
+  def get_supported_cloud_share(self, *args, **kwargs):
+    return ["ms365"]
 
   def __load_config(self, *args, **kwargs):
     config_data = self.get_common().helper_config().load(
@@ -38,6 +41,32 @@ class cloud_cmdb_provider_base(base):
   def config_path(self, *args, **kwargs):
     return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/config")
   
+  def reset_config_cloud_share(self, refresh = False, *args, **kwargs):    
+    self.get_config()["cloud_share"] = {}
+    self._save_config()
+
+  def get_config_cloud_share(self, refresh = False, *args, **kwargs):
+    if self.get_config(refresh= refresh).get("cloud_share") is not None:
+      return self.get_config().get("cloud_share")
+    
+    self.get_config()["cloud_share"] = {}
+    self._save_config()
+     
+    return self.get_config_cloud_share(*args, **kwargs)
+
+  def _update_config_cloud_share(self,config_key, config_value,  *args, **kwargs):
+     self.get_config_cloud_share(refresh = True)[config_key] = config_value
+     
+  def _save_config_cloud_share(self, *args, **kwargs):
+     self._save_config()
+  
+  def get_cloud_share_config_value(self, config_key, default_if_none = None, refresh = False, *args, **kwargs):
+    config_value = self.get_config_cloud_share(refresh= refresh).get(config_key)
+    if config_value is not None:
+      return config_value
+    
+    return default_if_none
+  
   def get_config(self, refresh = False, *args, **kwargs):
     if hasattr(self, "_config_data") and not refresh:
       return self._config_data
@@ -45,7 +74,7 @@ class cloud_cmdb_provider_base(base):
     self._config_data = self.__load_config()    
     return self.get_config(*args, **kwargs)
 
-  def _update_config(self,config_key, config_value, refresh= False,  *args, **kwargs):
+  def _update_config(self,config_key, config_value,  *args, **kwargs):
      self.get_config(refresh = True)[config_key] = config_value
      
   def _save_config(self, *args, **kwargs):
