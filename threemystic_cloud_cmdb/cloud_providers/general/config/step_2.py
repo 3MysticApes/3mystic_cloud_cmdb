@@ -83,11 +83,25 @@ class cloud_cmdb_general_config_step_2(base):
             config_key= "type"
           ))
         },
+        "name": {
+          "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) and self.get_common().helper_path().is_valid_filename(file_name= item),
+          "messages":{
+            "validation": f"Valid options are: {self.get_supported_cloud_share()}",
+          },
+          "conversion": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower"),
+          "desc": f"What is the name you would like to use for the cmdb (no extension)? The name will be converted to all lowercase.",
+          "default": self.get_cloud_share_config_value(
+            config_key= "name", default_if_none= "cmdb"
+          ),
+          "handler": generate_data_handlers.get_handler(handler= "base"),
+          "optional": True
+        },
       }
     )
-
+    
     if(response is not None):
-      self._update_config_cloud_share(config_key= "type", config_value= response.get("type").get("formated"))    
+      for key, item in response.items():
+        self._update_config_cloud_share(config_key= key, config_value= item.get("formated"))    
       if self.get_cloud_share_config_value(config_key= response.get("type").get("formated")) is None:
         self._update_config_cloud_share(config_key= response.get("type").get("formated"), config_value= {})
       self._save_config_cloud_share()
