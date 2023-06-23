@@ -41,7 +41,7 @@ class cloud_cmdb_provider_base(base):
   def config_path(self, *args, **kwargs):
     return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/config")
   
-  def reset_config_cloud_share(self, refresh = False, *args, **kwargs):    
+  def reset_config_cloud_share(self, *args, **kwargs):    
     self.get_config()["cloud_share"] = {}
     self._save_config()
 
@@ -54,8 +54,8 @@ class cloud_cmdb_provider_base(base):
      
     return self.get_config_cloud_share(*args, **kwargs)
 
-  def _update_config_cloud_share(self,config_key, config_value,  *args, **kwargs):
-     self.get_config_cloud_share(refresh = True)[config_key] = config_value
+  def _update_config_cloud_share(self,config_key, config_value, refresh = False,  *args, **kwargs):
+     self.get_config_cloud_share(refresh = refresh)[config_key] = config_value
      
   def _save_config_cloud_share(self, *args, **kwargs):
      self._save_config()

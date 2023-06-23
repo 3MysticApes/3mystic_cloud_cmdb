@@ -29,13 +29,13 @@ class cloud_cmdb_general_config_step_2(base):
           },
           "conversion": lambda item: self.get_common().helper_type().bool().is_true(check_value= item),
           "desc": f"Do you want to save the CMDB in a cloud Share?\nValid Options: {self.get_common().helper_type().bool().is_true_values()}",
-          "default": None,
+          "default": len(self.get_config_cloud_share()) > 0,
           "handler": generate_data_handlers.get_handler(handler= "base"),
-          "optional": True
+          "optional": len(self.get_config_cloud_share()) > 0
         }
       }
     )
-
+    
     if response is None:
       return
 
@@ -68,7 +68,7 @@ class cloud_cmdb_general_config_step_2(base):
 
     response = self.get_common().generate_data().generate(
       generate_data_config = {
-        "cloud_share_location": {
+        "type": {
           "validation": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower") in self.get_supported_cloud_share(),
           "messages":{
             "validation": f"Valid options are: {self.get_supported_cloud_share()}",
@@ -76,25 +76,27 @@ class cloud_cmdb_general_config_step_2(base):
           "conversion": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower"),
           "desc": f"What is the cloud share you would like to use? \nValid Options: {self.get_supported_cloud_share()}",
           "default": self.get_cloud_share_config_value(
-            config_key= "cloud_share_location"
+            config_key= "type"
           ),
           "handler": generate_data_handlers.get_handler(handler= "base"),
           "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_cloud_share_config_value(
-            config_key= "cloud_share_location"
+            config_key= "type"
           ))
         },
       }
     )
 
     if(response is not None):
-      for key, item in response.items():
-        self._update_config_cloud_share(config_key= key, config_value= item.get("formated"))
+      self._update_config_cloud_share(config_key= "type", config_value= response.get("type").get("formated"))    
+      if self.get_cloud_share_config_value(config_key= response.get("type").get("formated")) is None:
+        self._update_config_cloud_share(config_key= response.get("type").get("formated"), config_value= {})
       self._save_config_cloud_share()
+      
 
       from threemystic_cloud_cmdb.cloud_providers.general.config.step_2_cloud_share import cloud_cmdb_general_config_step_2_cloud_share as step
       next_step = step(common= self.get_common(), logger= self.get_logger())
       
-      next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "cloud_share_location"))
+      next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
 
       print("-----------------------------")
       print()
