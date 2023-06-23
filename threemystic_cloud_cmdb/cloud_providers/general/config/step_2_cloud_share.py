@@ -1,7 +1,7 @@
 from threemystic_cloud_cmdb.cloud_providers.general.config.base_class.base import cloud_cmdb_general_config_base as base
 from threemystic_common.base_class.generate_data.generate_data_handlers import generate_data_handlers
 
-
+import time
 
 class cloud_cmdb_general_config_step_2_cloud_share(base):
   def __init__(self, *args, **kwargs):
@@ -108,7 +108,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
 
     return None
   
-  def _step_ms365_tenant_location(self, cloud_share, data_client, *args, **kwargs):
+  def _step_ms365_tenant_location(self, cloud_share, data_client, ms_graph = None, *args, **kwargs):
 
     print("-----------------------------")
     print()
@@ -124,11 +124,12 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         "id": "Remove Entry"
       },      
       {
-        "id": "@me"
+        "id": "me"
       }
     ]
 
-    ms_graph = self.get_common().graph().graph(graph_method= "msgraph", credentials= data_client.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_share_config_value(config_key= cloud_share).get('tenant_id')))
+    if ms_graph is None:
+      ms_graph = self.get_common().graph().graph(graph_method= "msgraph", credentials= data_client.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_share_config_value(config_key= cloud_share).get('tenant_id')))
     user_groups = ms_graph.send_request(
       url = ms_graph.generate_graph_url(resource= "me", base_path= "/transitiveMemberOf/microsoft.graph.group")
     )
@@ -176,6 +177,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         print()
         print("-----------------------------")
 
+        self._step_ms365_tenant_path(cloud_share= cloud_share, data_client= data_client, ms_graph= ms_graph)
         return
       
     
@@ -197,7 +199,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       if drive_id is None:
         return drive_id
       
-      for drive_item in drive_item_id_options:
+      for drive_item in drive_item_id_options[position]:
         if drive_item.get("id") == drive_id:
           return index
         index += 1
@@ -206,20 +208,77 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
 
     return None
   
-  def get_drive_item_location_options(self, ms_graph, drive_item_id, cloud_share):
-    location_options_base = []
+  def generate_new_grive_item_folder(self, ms_graph, ms_graph_resource, ms_graph_resource_id, drive_item_parent_id, drive_item_id_options):
+    response = self.get_common().generate_data().generate(
+      generate_data_config = {
+        "name": {
+          "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) and self.get_common().helper_path().is_valid_filename(file_name= item),
+          "messages":{
+            "validation": f"Valid options are: {self.get_supported_cloud_share()}",
+          },
+          "conversion": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower"),
+          "desc": f"What is the name of the folder you would like to create? (blank will cancel)",
+          "default": None,
+          "handler": generate_data_handlers.get_handler(handler= "base"),
+          "optional": True
+        },
+      }
+    )
+
+    if response is None:
+      print("canceled")
+      time.sleep(2)
+      return None
+    
+    if response.get("name") is None:
+      print("canceled")
+      time.sleep(2)
+      return None
+    
+    if response.get("name").get("formated") is None:
+      print("canceled")
+      time.sleep(2)
+      return None
+    
+    try:
+      for drive_option in drive_item_id_options:
+        if (self.get_common().helper_type().string().set_case(string_value= drive_option.get("name"), case= "lower") == 
+            self.get_common().helper_type().string().set_case(string_value= response.get("name").get("formated"), case= "lower")):
+          return drive_option
+
+      file_data = ms_graph.send_request(
+        url = ms_graph.generate_graph_url(resource= ms_graph_resource, resource_id= ms_graph_resource_id, base_path= f'drive/items/{drive_item_parent_id}/children'),
+        data = ms_graph.create_folder_data(
+          name = response.get("name").get("formated"),
+          folder_args = {"@microsoft.graph.conflictBehavior": "fail"}
+        ),      
+        method="post"
+      )
+      return {"id": file_data["id"], "display": f"{file_data.get('id')} - {file_data.get('name')}"}
+    except Exception as err:
+      print("Could not create that folder")
+      print(err)
+      time.sleep(3)
+      return None
+  def get_drive_item_location_options(self, ms_graph,ms_graph_resource, ms_graph_resource_id, drive_item_id, cloud_share):
+    location_options_base = [
+      {
+      "id": "refresh",
+      "display": "Refresh List"
+    }
+    ]
     remove_entry = {
-      "id": "Remove Entry",
+      "id": "remove_entry",
       "display": "Remove Entry (does not remove it from ms365)"
     }
       
     new_folder = {
-      "id": "New Folder",
+      "id": "new_folder",
       "display": "New Folder"
     }
       
     select = {
-      "id": "Select",
+      "id": "select_folder",
       "display": "Select"
     }
 
@@ -232,31 +291,31 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       location_options_base.append(new_folder)
       location_options_base.append(remove_entry)
     
-    base_path = "me" if self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "@me" else f"groups/{self.get_cloud_share_config_value(config_key= cloud_share).get('group')}"
+
+    base_path = f"{drive_item_id}" if self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "me" else f"items/{drive_item_id}"
+    
     local_drive_options = ms_graph.send_request(
-      url = ms_graph.generate_graph_url(resource= "me", base_path= f"{base_path}/drive/items/{drive_item_id}/children")
+      url = ms_graph.generate_graph_url(resource= ms_graph_resource, resource_id= ms_graph_resource_id, base_path= f"drive/{base_path}/children")
     )
+
     return location_options_base + [
-      {"id": drive_option.get("id"), "display": f"{drive_option.get('id')} - {drive_option.get('displayName')}"} for drive_option in local_drive_options.get("value") if drive_option.get("file") is None and drive_option.get("folder") is not None
+      {"id": drive_option.get("id"), "name": drive_option.get('name'), "display": f"{drive_option.get('id')} - {drive_option.get('name')}"} for drive_option in local_drive_options.get("value") if drive_option.get("file") is None and drive_option.get("folder") is not None
     ]
   
-  def _step_ms365_tenant_path(self, cloud_share, data_client, *args, **kwargs):
+  def _step_ms365_tenant_path(self, cloud_share, data_client, ms_graph, *args, **kwargs):
 
     print("-----------------------------")
     print()
     print("What folder will the CMDB be stored in")
+    print("If you have moved the folder where teh cmdb is stored you could break the hierarchy used to validate the path, but the upload should be fine.")
+    print("This is because the upload does not look at the pat, IE. /3mystic/data/cmdb, it looks at the last drive ID and uses that which shouldn't change as you move folders.")
     print()
     print("-----------------------------")
     
     
     index = 1
-    print("loading groups")
+    print("loading folders")
 
-
-
-
-    
-    ms_graph = self.get_common().graph().graph(graph_method= "msgraph", credentials= data_client.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_share_config_value(config_key= cloud_share).get('tenant_id')))
     
     drive_item_ids = [
       {"id": "root", "display": "root"}
@@ -264,9 +323,20 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
     drive_item_position = 0
     drive_item_id_options = []
     drive_id_selected = False
+    main_graph_resource = "me" if self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "me" else f"groups"
+    main_graph_resource_id = self.get_cloud_share_config_value(config_key= cloud_share).get('group') if self.get_cloud_share_config_value(config_key= cloud_share).get('group') != "me" else None
     while not drive_id_selected:
-
-      drive_item_id_options.append(self.get_drive_item_location_options(ms_graph= ms_graph, drive_item_id= drive_item_ids[drive_item_position]['id']))
+      
+      try:
+        drive_item_id_options.append(self.get_drive_item_location_options(ms_graph= ms_graph, ms_graph_resource= main_graph_resource, ms_graph_resource_id= main_graph_resource_id, cloud_share= cloud_share, drive_item_id= drive_item_ids[drive_item_position]['id']))
+      except Exception as err:
+        print("Could not get list of folders")
+        print(err)
+        if main_graph_resource == "me":
+          print("possible issue is you are trying to store your onedrive space. please switch to one of the group drives")
+          self._step_ms365_tenant_location(cloud_share= cloud_share, data_client= data_client, ms_graph= ms_graph)
+          time.sleep(3)
+        return
 
       print("-----------------------------")
       print(f"Folders in {drive_item_ids[drive_item_position].get('display')}")
@@ -277,7 +347,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         print(f'{index}: {option.get("display")}')
         index += 1   
 
-      drive_item_index = self.get_drive_item_index(drive_item_id_options= drive_item_id_options[drive_item_position], cloud_share= cloud_share)
+      drive_item_index = self.get_drive_item_index(drive_item_id_options= drive_item_id_options, position= drive_item_position, cloud_share= cloud_share,)
       response = self.get_common().generate_data().generate(
         generate_data_config = {
           "drive_id": {
@@ -289,7 +359,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
             "desc": f"Please select the tenant to use \nValid Options: 0 - {len(drive_item_id_options[drive_item_position]) - 1}",
             "default": drive_item_index,
             "handler": generate_data_handlers.get_handler(handler= "base"),
-            "optional": drive_item_index is not None
+            "optional": drive_item_index is not None and (drive_item_ids[drive_item_position]['id'] != "root" or self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "@me")
           },
         }
       )
@@ -301,26 +371,50 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         print()
         print("-----------------------------")
         return
-
-    # if(response is not None):
-    #   if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= response.get("group").get("formated")):
-    #     self.get_cloud_share_config_value(
-    #       config_key= cloud_share
-    #     )["group"] = group_options[response.get("group").get("formated")].get("id") if response.get("group").get("formated") > 0 else ""
-    #     self._save_config_cloud_share()
-
-    #     print("-----------------------------")
-    #     print()
-    #     print(f"Group Updated: {self.get_cloud_share_config_value(config_key= cloud_share).get('group')}")
-    #     print()
-    #     print("-----------------------------")
-
-    #     return
       
-    
+      drive_id_option = drive_item_id_options[drive_item_position][response.get("drive_id").get("formated")]
+      if drive_id_option["id"] == "refresh":
+        drive_item_id_options.pop()
+        continue
+
+      if drive_id_option["id"] == "select_folder":
+        drive_id_selected = True
+        continue
+      
+      if drive_id_option["id"] == "new_folder":
+        new_folder_info = self.generate_new_grive_item_folder(
+          ms_graph= ms_graph,
+          ms_graph_resource= main_graph_resource,
+          ms_graph_resource_id= main_graph_resource_id,
+          drive_item_parent_id= drive_item_ids[drive_item_position].get("id"),
+          drive_item_id_options = drive_item_id_options[drive_item_position]
+        )
+        if new_folder_info is None:
+          continue
+
+        drive_item_ids.append(new_folder_info)
+        drive_item_position = drive_item_position + 1
+        continue
+      
+      if drive_id_option["id"] == "remove_entry":
+        if len(drive_item_id_options) > 1:
+          drive_item_ids.pop()
+          drive_item_id_options.pop()
+          drive_item_id_options.pop()
+          drive_item_position = drive_item_position - 1
+          continue
+        print("already at the root")
+        continue
+      
+      drive_item_ids.append(drive_id_option)
+      drive_item_position = drive_item_position + 1
+      
+      
+      
+    print(drive_item_ids)
     print("-----------------------------")
     print()
-    print(f"Group NOT Updated")
+    print(f"Drive ID Updated: {drive_item_ids[-1]}")
     print()
     print("-----------------------------")
 
