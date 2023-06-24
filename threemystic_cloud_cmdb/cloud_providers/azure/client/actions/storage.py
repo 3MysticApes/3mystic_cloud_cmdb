@@ -10,14 +10,21 @@ class cloud_cmdb_azure_client_action(base):
       *args, **kwargs)
   
   def _load_cmdb_general_data(self, *args, **kwargs):
-    return {
+    if hasattr(self, "_cmdb_general_data_loaded"):
+      return self._cmdb_general_data_loaded
+    
+    self._cmdb_general_data_loaded = {
       self.get_cmdb_data_action():{
-        "display":"Storage",
+        "display":"Storage"
       }
     }
+    return self._load_cmdb_general_data()
   
   def _load_cmdb_column_data(self, *args, **kwargs):
-    return {
+    if hasattr(self, "_cmdb_column_data_loaded"):
+      return self._cmdb_column_data_loaded
+    
+    self._cmdb_column_data_loaded = {
       self.get_cmdb_data_action(): {
         "Type":{
           "display": "StorageType",
@@ -57,3 +64,4 @@ class cloud_cmdb_azure_client_action(base):
         },
       } 
     }
+    return self._load_cmdb_column_data()

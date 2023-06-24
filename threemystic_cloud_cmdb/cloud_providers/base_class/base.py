@@ -26,6 +26,8 @@ class cloud_cmdb_provider_base(base):
 
   def get_cmdb_report_path(self, *args, **kwargs):
     local_path = self.get_config_value("default_cmdb_report_path", self.default_report_path())
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= local_path):
+      local_path = self.default_report_path()
     if self.get_common().helper_path().is_valid_filepath(path= local_path):
       local_path = self.get_common().helper_path().get(path= local_path)
       if not local_path.exists():

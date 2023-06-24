@@ -14,7 +14,10 @@ class cloud_cmdb_azure_client_action(base):
     
   
   def _load_cmdb_general_data(self, *args, **kwargs):
-    return {
+    if hasattr(self, "_cmdb_general_data_loaded"):
+      return self._cmdb_general_data_loaded
+    
+    self._cmdb_general_data_loaded = {
       "vmss":{
         "display":"ASG",
       },
@@ -22,17 +25,24 @@ class cloud_cmdb_azure_client_action(base):
         "display":"LongLived",
       }
     }
+    return self._load_cmdb_general_data()
   
   def _load_cmdb_column_data(self, *args, **kwargs):
-    return {      
+    if hasattr(self, "_cmdb_column_data_loaded"):
+      return self._cmdb_column_data_loaded
+    
+    self._cmdb_column_data_loaded = {      
       "vmss": {
         "AutoScalingGroup":{
           "display": "AutoScalingGroup",
           "handler": lambda item: "VMSS"
         },        
         "ASGArn": {
-          "display": {"default": "ID", "cmdb":"ASG Arn"},
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id")
+          "display": "ID",
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id"),
+          "cmdb": {
+            "display": "ASG Arn"
+          }
         },
         "ASGName": {
           "display": "Name",
@@ -201,6 +211,7 @@ class cloud_cmdb_azure_client_action(base):
         },
       } 
     }
+    return self._load_cmdb_column_data()
   
   
   def _get_vm_load_balancers_name(self, vm_load_balancers, *args, **kwargs):

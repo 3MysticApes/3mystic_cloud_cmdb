@@ -4,16 +4,47 @@ class cloud_cmdb_azure_client_action_base(base):
   def __init__(self, *args, **kwargs):
     super().__init__(provider= "azure", *args, **kwargs)  
   
-  def get_default_columns(self, *args, **kwargs):
-    return ["Tenant Id", "Subscription ID", "Subscription"]
+  def _get_default_columns_raw(self, *args, **kwargs):    
+    if hasattr(self, "_columns_raw"):
+      return self._columns_raw
+    self._columns_raw = [
+      {
+        "display": "TenantId",
+        "handler": lambda item: self.get_cloud_client().get_tenant_id(tenant= item["account"], is_account= True),
+        "cmdb": {
+          "hidden": True
+        }
+      },
+      {
+        "display": "SubscriptionId",
+        "handler": lambda item: self.get_cloud_client().get_account_id(account = item["account"]),
+        "cmdb": {
+          "display": "AccountId",
+        }
+      },
+      {
+        "display": "Subscription",
+        "handler": lambda item: self.get_cloud_client().get_account_name(account = item["account"]),
+        "cmdb": {
+          "display": "Account",
+          "handler": lambda item: f'{self.get_cloud_client().get_account_id(account = item["account"])} - {self.get_cloud_client().get_tenant_id(tenant = item["account"], is_account= True)}'
+        }
+      }
+    ]
+
+    return self._get_default_columns_raw()
+
   
-  def generate_resource_tags_csv(cls, tags, seperator=",", tag_attribute_seperator=":", **kwargs):
+  def generate_resource_tags_csv(self, tags, seperator=",", tag_attribute_seperator=":", **kwargs):
     if tags is None:
       return None
     return seperator.join([f"{key}{tag_attribute_seperator}{tag}" for key,tag in tags.items()])
   
-  def generate_tag_columns(self, account, resource, *args, **kwargs):
-    return []
+  def generate_tag_columns(self, account, resource, is_cmdb= False, *args, **kwargs):
+    if not is_cmdb:
+      return []
+
+    return {}
   # if InventoryDataSheet.get("include_requiredtags") is None or InventoryDataSheet.get("include_requiredtags").get("include") != True or tags is None or len(tags) < 1:
   #     return []
     
@@ -80,16 +111,27 @@ class cloud_cmdb_azure_client_action_base(base):
 
   def _get_report_default_row(self, account, *args, **kwargs):
     return [
-      self.get_cloud_client().get_tenant_id(tenant= account, is_account= True),
-      self.get_cloud_client().get_account_id(account= account),
-      self.get_cloud_client().get_account_name(account= account),
+      column.get("handler")({"account": account}) for column in self._get_default_columns_raw()
     ]
+  
+  def _get_report_default_row_cmdb(self, account, *args, **kwargs):
+    return_data = {}
+    for column in self._get_default_columns_raw():
+      display = column.get("display")
+      if column.get("cmdb") is None:
+        return_data[display] = column.get("handler")({"account": account})
+        continue
 
-  # def _load_cmdb_general_data(self, *args, **kwargs):
-  #   raise self.get_common().exception().exception(
-  #     exception_type = "function"
-  #   ).not_implemented(
-  #     logger = self.get_common().get_logger(),
-  #     name = "_load_cmdb_general_data",
-  #     message = f"Method _load_cmdb_general_data has not been implemented"
-  #   )
+      if column.get("cmdb").get("hidden") == True:
+        continue
+
+      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= column.get("cmdb").get("display")):
+        display = column.get("cmdb").get("display")
+        
+      if column.get("cmdb").get("handler") is None:
+        return_data[display] = column.get("handler")({"account": account})
+        continue
+
+      return_data[display] = column.get("cmdb").get("handler")({"account": account})
+    
+    return return_data

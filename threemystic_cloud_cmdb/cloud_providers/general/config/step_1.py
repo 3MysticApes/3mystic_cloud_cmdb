@@ -26,13 +26,13 @@ class cloud_cmdb_general_config_step_1(base):
             "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_default_provider())
         },
         "default_cmdb_report_path": {
-            "validation": lambda item: self.get_common().helper_path().is_valid_filepath(path= item),
+            "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) and self.get_common().helper_path().is_valid_filepath(path= item),
             "messages":{
               "validation": f"A valid path is required",
             },
             "conversion": lambda item: item,
             "desc": f"Where should the reports be saved locally?",
-            "default": self.default_report_path(),
+            "default": self.get_cmdb_report_path().absolute().as_posix(),
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": True
         }

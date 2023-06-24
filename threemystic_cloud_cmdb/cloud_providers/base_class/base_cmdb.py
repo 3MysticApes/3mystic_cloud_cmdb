@@ -13,6 +13,22 @@ class cloud_cmdb_provider_base_cmdb(base):
     self._set_client_name(*args, **kwargs)
     self.__set_cmdb_data_action(*args, **kwargs)
 
+  def _get_default_columns_cmdb_raw(self, *args, **kwargs):
+    if hasattr(self, "_columns_cmdb_raw"):
+      return self._columns_cmdb_raw
+    self._columns_cmdb_raw = {
+      "resource_group": {
+        "display": "ResourceGroup"
+      },
+      "region": {
+        "display": "Region"
+      },
+      "environment": {
+        "display": "Environment"
+      },
+    }
+    return self._get_default_columns_cmdb_raw()
+  
   @abc.abstractclassmethod
   def generate_resource_tags_csv(self, tags, seperator=",", tag_attribute_seperator=":", *args, **kwargs):
         pass
@@ -25,7 +41,7 @@ class cloud_cmdb_provider_base_cmdb(base):
     pass
   
   @abc.abstractclassmethod
-  def get_default_columns(self, *args, **kwargs):
+  def _get_default_columns_raw(self, *args, **kwargs):
     pass
 
   @abc.abstractclassmethod
@@ -33,13 +49,38 @@ class cloud_cmdb_provider_base_cmdb(base):
     pass
   
   @abc.abstractclassmethod
-  def _get_report_default_row(self, *args, **kwargs):
+  def _get_report_default_row(self, account, *args, **kwargs):
     pass
   
   @abc.abstractclassmethod
-  def generate_tag_columns(self, account, resource, *args, **kwargs):
+  def _get_report_default_row_cmdb(self, account, *args, **kwargs):
     pass
   
+  @abc.abstractclassmethod
+  def generate_tag_columns(self, account, resource, is_cmdb = False, *args, **kwargs):
+    pass
+  
+  def get_default_columns(self, *args, **kwargs):
+    return [
+      column.get("display") for column in self._get_default_columns_raw(*args, **kwargs) if column.get("hidden") != True
+    ]
+  
+  def get_default_columns_cmdb(self, *args, **kwargs):
+    default_columns = []
+    for column in self._get_default_columns_raw(*args, **kwargs):
+      if column.get("cmdb") is None:
+        default_columns.append(column.get("display"))
+        continue
+
+      if column.get("cmdb").get("hidden") == True:
+        continue
+
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= column.get("cmdb").get("display")):
+        default_columns.append(column.get("display"))
+        continue
+
+      default_columns.append(column.get("cmdb").get("display"))
+
   def get_item_data_value(self, item_data, value_key, *args, **kwargs):
     if self.get_common().helper_type().general().is_type(value_key, str):
       if hasattr(item_data, value_key):
@@ -79,18 +120,34 @@ class cloud_cmdb_provider_base_cmdb(base):
       return  
     print(f'Report saved at: {report_path}')
     self._get_excel().save(report_path)
+  
+  async def save_report_cmdb(self, *args, **kwargs):    
+    if len(self.get_cloud_cmdb().get_config_cloud_share()) < 1:
+      return None
+    
 
-  def get_report_default_row(self, account, sheet_key, resource = None,  *args, **kwargs):
-    default_row = self._get_report_default_row(account= account)
+  def get_report_default_row(self, account, sheet_key, resource = None, is_cmdb = False,  *args, **kwargs):
+    default_row = self._get_report_default_row(account= account) if is_cmdb == False else self._get_report_default_row_cmdb(account= account)
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_resourcegroup") == True:
-      default_row.append(self.get_common().helper_type().string().join(",", resource.get("extra_resourcegroups")))
+      if not is_cmdb:
+        default_row.append(self.get_common().helper_type().string().join(",", resource.get("extra_resourcegroups")))
+      else:
+        default_row[self._get_default_columns_cmdb_raw()["resource_group"].get("display")] = self.get_common().helper_type().string().join(",", resource.get("extra_resourcegroups"))
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_environment") == True:
-      default_row.append(self.get_account_environment(account= account, resource= resource))
+      if not is_cmdb:
+        default_row.append(self.get_account_environment(account= account, resource= resource))
+      else:
+        default_row[self._get_default_columns_cmdb_raw()["environment"].get("display")] = self.get_account_environment(account= account, resource= resource)
+      
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_region") == True:
-      default_row.append(self.get_cloud_client().get_azresource_location(resource= resource))
+      if not is_cmdb:
+        default_row.append(self.get_cloud_client().get_azresource_location(resource= resource))
+      else:
+        default_row[self._get_default_columns_cmdb_raw()["region"].get("display")] = self.get_cloud_client().get_azresource_location(resource= resource)
+      
     
     return default_row
 
@@ -147,11 +204,16 @@ class cloud_cmdb_provider_base_cmdb(base):
               account= report_data_item.get("extra_account"), 
               resource= report_data_item,  
               region= report_data_item.get("extra_region"), 
-              resource_groups = report_data_item.get("extra_resourcegroups")) +
-            [column_data["handler"](report_data_item) for _, column_data in self.get_workbook_columns()[sheet_key].items()] +
-            self.generate_tag_columns(account=report_data_item.get("extra_account"), 
-              resource= report_data_item)
+              resource_groups = report_data_item.get("extra_resourcegroups"),
+              is_cmdb= False
+              ) +
+            [self.get_handler_column_data(column_data= column_data, is_cmdb= False)(report_data_item) for _, column_data in self.get_workbook_columns()[sheet_key].items()] +
+            self.generate_tag_columns(
+              account=report_data_item.get("extra_account"), 
+              resource= report_data_item,
+              is_cmdb= False)
           )
+          self.save_cmdb_workbook_item(sheet_key= sheet_key, account= report_data_item.get("extra_account"), report_data_item= report_data_item)
 
   def _get_excel(self, *args, **kwargs):    
     if hasattr(self, "_workbook_excel_main"):
@@ -163,6 +225,63 @@ class cloud_cmdb_provider_base_cmdb(base):
     while len(self._workbook_excel_main.sheetnames) > 0:
       self._workbook_excel_main.remove(self._workbook_excel_main[self._workbook_excel_main.sheetnames[0]])
     return self._get_excel()
+
+  def get_cmdb_workbook(self, sheet_key, *args, **kwargs):    
+    if len(self.get_cloud_cmdb().get_config_cloud_share()) < 1:
+      return None
+    
+    if hasattr(self, "_workbook_cmdb_data"):
+      if self._workbook_cmdb_data.get(sheet_key) is not None:
+        return self._workbook_cmdb_data[sheet_key]
+    
+    if not hasattr(self, "_workbook_cmdb_data"):
+      self._workbook_cmdb_data = {}
+
+    self._workbook_cmdb_data[sheet_key] = []
+    return self.get_cmdb_workbook(sheet_key= sheet_key, *args, **kwargs)
+  
+  def get_handler_column_data(self, column_data, is_cmdb = False, *args, **kwargs):    
+    if not is_cmdb or column_data.get("cmdb") is None:
+      return column_data["handler"]
+    
+    if column_data.get("cmdb").get("handler") is None:
+      return column_data["handler"]
+    
+    return column_data.get("cmdb").get("handler")
+
+  def get_display_column_data(self, column_data, is_cmdb = False, *args, **kwargs):
+    if not is_cmdb or column_data.get("cmdb") is None:
+      return str(column_data.get("display"))
+    
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= column_data.get("cmdb").get("display")):
+      return str(column_data["display"])
+    
+    return str(column_data.get("cmdb").get("display"))
+  
+  def save_cmdb_workbook_item(self, sheet_key, account, report_data_item, *args, **kwargs):    
+    if len(self.get_cloud_cmdb().get_config_cloud_share()) < 1:
+      return None
+
+    self.get_cmdb_workbook(sheet_key= sheet_key).append(
+      self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        self.get_report_default_row(
+          sheet_key= sheet_key,
+          account= account, 
+          resource= report_data_item,  
+          region= report_data_item.get("extra_region"), 
+          resource_groups = report_data_item.get("extra_resourcegroups"),
+          is_cmdb = True),
+        {
+          self.get_display_column_data(column_data= column_data, is_cmdb= True):self.get_handler_column_data(column_data= column_data, is_cmdb= True)(report_data_item)
+          for column_data in (self.get_workbook_columns()[sheet_key].values())},
+        self.generate_tag_columns(
+          account= account, 
+          resource= report_data_item,
+          is_cmdb= True)
+      ])
+    )
+    
 
   def get_excel_workbook(self, sheet_key, *args, **kwargs):    
     if hasattr(self, "_workbook_excel_data"):
@@ -267,7 +386,7 @@ class cloud_cmdb_provider_base_cmdb(base):
         item
     ])
     return return_data
-
+  
   def get_workbook_columns(self, *args, **kwargs):
     if hasattr(self, "_workbook_column_data"):
       return self._workbook_column_data
@@ -292,16 +411,11 @@ class cloud_cmdb_provider_base_cmdb(base):
         
     return return_data
   
-  def get_workbook_column_header_display(self, info_column, display_key = "default", existing_header = None, *args, **kwargs):
+  def get_workbook_column_header_display(self, info_column, *args, **kwargs):
     
     if self.get_common().helper_type().general().is_type(info_column["display"], str):
       return info_column["display"]
 
-    if self.get_common().helper_type().general().is_type(info_column["display"], dict):      
-      if display_key in info_column["display"]:      
-        return self.get_workbook_column_header_display_dict(column_display = info_column["display"].get(display_key), default = info_column["display"]["default"], existing_header = existing_header)
-        
-      return info_column["display"]["default"]
     
     raise self.get_common().exception().exception(
         exception_type = "argument"
@@ -309,24 +423,6 @@ class cloud_cmdb_provider_base_cmdb(base):
         logger = self.get_common().get_logger(),
         name = "info_column",
         message = f"Unknown info_column: {self.get_common().helper_json().dumps(data= info_column)}"
-      )
-  
-  def get_workbook_column_header_display_dict(self, column_display, default, existing_header = None, *args, **kwargs):    
-    if self.get_common().helper_type().general().is_type(column_display, str):
-      return column_display
-
-    if existing_header is not None and "search" in column_display and callable(column_display.get("search")):
-      return existing_header if column_display.get("search")(existing_header) else default
-    
-    if "display" in column_display:
-      return column_display.get("display")
-    
-    raise self.get_common().exception().exception(
-        exception_type = "argument"
-      ).not_implemented(
-        logger = self.get_common().get_logger(),
-        name = "column_display",
-        message = f"Unknown column_display: {self.get_common().helper_json().dumps(data= column_display)}"
       )
   
   def get_default_report_columns(self, sheet_key, *args, **kwargs):

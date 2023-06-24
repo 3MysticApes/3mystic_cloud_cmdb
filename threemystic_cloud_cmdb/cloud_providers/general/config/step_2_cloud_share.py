@@ -190,17 +190,24 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
   
 
   
-  def get_drive_item_index(self, drive_item_id_options, position, cloud_share):
+  def get_drive_item_index(self, drive_item_ids, drive_item_id_options, position, cloud_share):
     try:
       index = 0
       drive_id = None
-      if self.get_cloud_share_config_value(config_key= cloud_share).get("drive_id") is not None:
-        drive_id = self.get_cloud_share_config_value(config_key= cloud_share).get('drive_id')[position]
+      drive_item_ids_position = position + 1
+      if len(drive_item_ids) > drive_item_ids_position:
+        if self.get_common().helper_type().general().is_type(obj= drive_item_ids[drive_item_ids_position], type_check= dict):
+          drive_id = drive_item_ids[drive_item_ids_position]
+      
       if drive_id is None:
-        return drive_id
+        return None
+      
+      if drive_id.get("id") is None:
+        return None
       
       for drive_item in drive_item_id_options[position]:
-        if drive_item.get("id") == drive_id:
+        if (self.get_common().helper_type().string().set_case(string_value= drive_item.get("id"), case= "lower") == 
+            self.get_common().helper_type().string().set_case(string_value= drive_id.get("id"), case= "lower")):
           return index
         index += 1
     except:
@@ -254,12 +261,13 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         ),      
         method="post"
       )
-      return {"id": file_data["id"], "display": f"{file_data.get('id')} - {file_data.get('name')}"}
+      return {"id": file_data["id"], "name": file_data.get('name'), "display": f"{file_data.get('id')} - {file_data.get('name')}"}
     except Exception as err:
       print("Could not create that folder")
       print(err)
       time.sleep(3)
       return None
+    
   def get_drive_item_location_options(self, ms_graph,ms_graph_resource, ms_graph_resource_id, drive_item_id, cloud_share):
     location_options_base = [
       {
@@ -282,11 +290,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       "display": "Select"
     }
 
-    if self.get_cloud_share_config_value(config_key= cloud_share).get('group') and drive_item_id == "root":
-      location_options_base.append(select)
-      location_options_base.append(new_folder)
-    
-    if drive_item_id != "root":
+    if self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "me" or drive_item_id != "root":
       location_options_base.append(select)
       location_options_base.append(new_folder)
       location_options_base.append(remove_entry)
@@ -317,9 +321,21 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
     print("loading folders")
 
     
-    drive_item_ids = [
-      {"id": "root", "display": "root"}
-    ]
+    drive_item_ids = self.get_cloud_share_config_value(config_key= cloud_share).get('drive_id')
+    if not self.get_common().helper_type().general().is_type(obj= drive_item_ids, type_check= list):
+      drive_item_ids = [
+        {"id": "root", "display": "root"}
+      ]
+    try:
+      if len(drive_item_ids) < 1:
+        drive_item_ids.append({"id": "root", "display": "root"})
+      if not self.get_common().helper_type().general().is_type(obj= drive_item_ids[0], type_check= dict):
+        drive_item_ids[0] = ({"id": "root", "display": "root"})
+    except:
+      drive_item_ids = [
+        {"id": "root", "display": "root"}
+      ]
+
     drive_item_position = 0
     drive_item_id_options = []
     drive_id_selected = False
@@ -342,12 +358,15 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       print(f"Folders in {drive_item_ids[drive_item_position].get('display')}")
       print("-----------------------------")
       
+      drive_item_index = self.get_drive_item_index(drive_item_ids= drive_item_ids, drive_item_id_options= drive_item_id_options, position= drive_item_position, cloud_share= cloud_share,)
+
       index = 0
       for option in drive_item_id_options[drive_item_position]:
         print(f'{index}: {option.get("display")}')
+        if drive_item_index is None and option.get("id") == "select_folder":
+          drive_item_index = index
         index += 1   
 
-      drive_item_index = self.get_drive_item_index(drive_item_id_options= drive_item_id_options, position= drive_item_position, cloud_share= cloud_share,)
       response = self.get_common().generate_data().generate(
         generate_data_config = {
           "drive_id": {
@@ -359,7 +378,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
             "desc": f"Please select the tenant to use \nValid Options: 0 - {len(drive_item_id_options[drive_item_position]) - 1}",
             "default": drive_item_index,
             "handler": generate_data_handlers.get_handler(handler= "base"),
-            "optional": drive_item_index is not None and (drive_item_ids[drive_item_position]['id'] != "root" or self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "@me")
+            "optional": drive_item_index
           },
         }
       )
@@ -411,7 +430,10 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       
       
       
-    print(drive_item_ids)
+    self.get_cloud_share_config_value(
+      config_key= cloud_share
+    )["drive_id"] = drive_item_ids
+    self._save_config_cloud_share()
     print("-----------------------------")
     print()
     print(f"Drive ID Updated: {drive_item_ids[-1]}")
