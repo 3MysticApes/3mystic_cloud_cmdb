@@ -12,6 +12,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   
   def _validate_cmdb_init(self, *args, **kwargs):
     self._validate_cmdb_file()
+    self._validate_workbook_worksheets()
 
   def _get_ms_graph_drive_id(self, *args, **kwargs):
     if hasattr(self, "_ms365_graph_drive_id"):
@@ -139,12 +140,49 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
     self._worksheet_data = None
     if worksheets_response.get("value") is None:
-      return
+      for worksheet_name in self.get_cmdb_data_containers():
+        self.add_workbook_worksheet(sheet_name= worksheet_name)
+      return self._validate_workbook_worksheets(*args, **kwargs)
     
     if len(worksheets_response.get("value")) < 1:
-      return
+      for worksheet_name in self.get_cmdb_data_containers():
+        self.add_workbook_worksheet(sheet_name= worksheet_name)
+      return self._validate_workbook_worksheets(*args, **kwargs)
     
-    self._worksheet_data = {self.get_common().helper_type().string().set_case(string_value= worksheet["name"], case= "lower"):worksheet for worksheet in worksheets_response["value"]}
+    self._worksheet_data = {worksheet["name"]:worksheet for worksheet in worksheets_response["value"]}
+    missing_worksheets = False
+    for worksheet_name in self.get_cmdb_data_containers():
+      if self._worksheet_data.get(worksheet_name) is not None:
+        continue
+
+      self.add_workbook_worksheet(sheet_name= worksheet_name)
+      missing_worksheets = True
+    
+    if missing_worksheets:      
+      return self._validate_workbook_worksheets(*args, **kwargs)
+    
+    return None
+  
+  def add_workbook_worksheet(self, sheet_name, *args, **kwargs):
+    
+    base_path = f"{self.get_cmdb_file().get('id')}" if self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group') == "me" else f"items/{self.get_cmdb_file().get('id')}"
+    self._get_ms_graph().send_request(
+      url = self._get_ms_graph().generate_graph_url(
+        resource= self._get_ms_graph_resource(), 
+        resource_id= self._get_ms_graph_resource_id(), 
+        base_path= f"drive/{base_path}/workbook/worksheets"),
+        session_config = {
+          "type":"workbook",
+          "drive_id": self.get_cmdb_file().get('id'),
+          "persist_changes": True,
+          "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
+        },
+        data = {
+        "name": sheet_name
+        }
+        params={"@microsoft.graph.conflictBehavior": "replace"},
+        method= "post"
+    )
     
 
 
