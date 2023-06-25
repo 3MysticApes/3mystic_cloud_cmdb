@@ -122,7 +122,7 @@ class cloud_cmdb_provider_base_cmdb(base):
     self._get_excel().save(report_path)
   
   async def save_report_cmdb(self, *args, **kwargs):    
-    if len(self.get_cloud_cmdb().get_config_cloud_share()) < 1:
+    if not self.get_cloud_cmdb().has_cloud_share_configured():
       return None
     
 
@@ -226,8 +226,8 @@ class cloud_cmdb_provider_base_cmdb(base):
       self._workbook_excel_main.remove(self._workbook_excel_main[self._workbook_excel_main.sheetnames[0]])
     return self._get_excel()
 
-  def get_cmdb_workbook(self, sheet_key, *args, **kwargs):    
-    if len(self.get_cloud_cmdb().get_config_cloud_share()) < 1:
+  def get_cmdb_workbook(self, sheet_key, *args, **kwargs):
+    if not self.get_cloud_cmdb().has_cloud_share_configured():
       return None
     
     if hasattr(self, "_workbook_cmdb_data"):
@@ -258,8 +258,8 @@ class cloud_cmdb_provider_base_cmdb(base):
     
     return str(column_data.get("cmdb").get("display"))
   
-  def save_cmdb_workbook_item(self, sheet_key, account, report_data_item, *args, **kwargs):    
-    if len(self.get_cloud_cmdb().get_config_cloud_share()) < 1:
+  def save_cmdb_workbook_item(self, sheet_key, account, report_data_item, *args, **kwargs):
+    if not self.get_cloud_cmdb().has_cloud_share_configured():
       return None
 
     self.get_cmdb_workbook(sheet_key= sheet_key).append(

@@ -47,6 +47,18 @@ class cloud_cmdb_provider_base(base):
     self.get_config()["cloud_share"] = {}
     self._save_config()
 
+  def has_cloud_share_configured(self, refresh = False, *args, **kwargs):
+    
+    if len(self.get_config_cloud_share(refresh= refresh)) < 1:
+      return False
+
+    if (not self.get_common().helper_type().string().is_null_or_whitespace(
+          string_value= self.get_config_cloud_share().get("type")) and
+        self.get_config_cloud_share().get("type") in self.get_supported_cloud_share()):
+      return True
+    
+    return False
+
   def get_config_cloud_share(self, refresh = False, *args, **kwargs):
     if self.get_config(refresh= refresh).get("cloud_share") is not None:
       return self.get_config().get("cloud_share")

@@ -15,7 +15,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= cloud_share):
       return
     
-    if cloud_share == cloud_share:
+    if cloud_share == "ms365":
       self._step_ms365_tenant(cloud_share= cloud_share)
       return
   
