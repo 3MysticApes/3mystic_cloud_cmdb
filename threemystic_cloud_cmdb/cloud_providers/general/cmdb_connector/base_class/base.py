@@ -40,15 +40,27 @@ class cloud_cmdb_general_cmdb_connector_base(base):
 
     return self._get_postfix_column(*args, **kwargs)
 
-  def __set_cmdb_postfix_columns(self, auto_load = None, include_delete_column = False, include_empty_column = False, *args, **kwargs):
+  def __set_cmdb_postfix_columns(self, auto_load = None, data_container_settings = None, *args, **kwargs):
     if auto_load is not None:   
       if hasattr(auto_load, "_cmdb_postfix_column_settings"):
-        return self.__set_cmdb_postfix_columns(**auto_load.__set_cmdb_postfix_columns)
+        return self.__set_cmdb_postfix_columns(data_container_settings= auto_load._cmdb_postfix_column_settings)
+    
+    self._cmdb_postfix_column_settings = {}
+    if data_container_settings is None:
+      data_container_settings = {}
+    for data_container in self.get_cmdb_data_containers():
+      self._cmdb_postfix_column_settings[data_container] = self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        data_container_settings.get(data_container) if data_container_settings.get(data_container) is not None else {},
+        {
+          "delete": True,
+          "empty": True,
+        }
+      ])
+
       
-    self._cmdb_postfix_column_settings = {
-      "delete": include_delete_column,
-      "empty": include_empty_column,
-    }
+    data_container_settings
+    
 
   def get_cmdb_name(self, *args, **kwargs):
     if hasattr(self, "_cmdb_name"):
@@ -74,7 +86,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   def get_cmdb_data_containers(self, *args, **kwargs):
     return self.__cmdb_data_containers
   
-  def __set_cmdb_data_containers(self, auto_load = None, data_containers, *args, **kwargs):
+  def __set_cmdb_data_containers(self, auto_load = None, data_containers = None, *args, **kwargs):
     if auto_load is not None:
       if auto_load.get_cmdb_data_containers() is not None:
         return self.__set_cmdb_data_containers(data_containers= auto_load.get_cmdb_data_containers())

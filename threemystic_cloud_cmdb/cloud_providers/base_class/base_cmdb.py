@@ -322,7 +322,11 @@ class cloud_cmdb_provider_base_cmdb(base):
       common= self.get_common(),
       logger= self.get_common().get_logger(),
       cloud_client= self.get_cloud_client(),
-      container_columns= self.get_default_columns_cmdb()
+      data_containers= [data_container for data_container in self._get_data_action_by_key().keys()],
+      container_columns= self.get_default_columns_cmdb(),
+      data_container_settings = {
+        data_connector:data.get("cmdb_connector") for data_connector, data in self.get_workbook_general_data().items()
+      }
     ).get_connector()
 
   def get_data_start(self, *args, **kwargs):
@@ -382,7 +386,11 @@ class cloud_cmdb_provider_base_cmdb(base):
       "include_region": True,
       "include_environment": True,
       "include_resourcegroup": True,
-      "include_requiredtags": True
+      "include_requiredtags": True,
+      "cmdb_connector":{
+        "include_delete_column": True,
+        "include_empty_column": True,
+      }
     }
   
   def _load_cmdb_general_default_column_data(self, *args, **kwargs):
