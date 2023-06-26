@@ -49,9 +49,9 @@ class cloud_cmdb_azure_client_action(base):
           "display": "MonthTotalForcast",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key="month_forecast")
         },
-        "year_forecast":{
+        "year_to_date":{
           "display": "YearToDate",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="year_forecast")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="year_to_date")
         },
         "year_forecast":{
           "display": "YearTotalForcast",
