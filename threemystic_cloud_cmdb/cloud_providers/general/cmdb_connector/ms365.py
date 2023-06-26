@@ -15,7 +15,6 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     self._validate_cmdb_file()
     self._validate_workbook_worksheets()
     self._validate_workbook_worksheets_tables()
-    # add_workbook_worksheets_table
 
   def _get_workbook_table_name(self, sheet_name, *args, **kwargs):
     return f'cmdb_{sheet_name}'

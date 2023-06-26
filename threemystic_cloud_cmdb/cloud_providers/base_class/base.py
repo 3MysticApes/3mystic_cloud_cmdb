@@ -1,5 +1,4 @@
 from threemystic_common.base_class.base_provider import base
-import abc
 
 class cloud_cmdb_provider_base(base):
   def __init__(self, *args, **kwargs):

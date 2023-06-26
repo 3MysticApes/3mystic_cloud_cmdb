@@ -1,5 +1,5 @@
 from threemystic_cloud_cmdb.cloud_providers.base_class.base import cloud_cmdb_provider_base as base
-import abc
+from abc import abstractmethod
 
 class cloud_cmdb_general_cmdb_connector_base(base):
   def __init__(self, *args, **kwargs):
@@ -9,12 +9,15 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     self.__set_cmdb_data_containers_columns(*args, **kwargs)
     self.__set_cmdb_postfix_columns(*args, **kwargs)
 
+    if(self.has_cloud_share_configured()):
+      self._validate_cmdb_init()
 
-  @abc.abstractclassmethod
+
+  @abstractmethod
   def get_cloud_share(self, *args, **kwargs):
     pass
 
-  @abc.abstractclassmethod
+  @abstractmethod
   def _validate_cmdb_init(self, *args, **kwargs):
     pass
   
@@ -30,15 +33,19 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       return self._cmdb_postfix_columns
     
     self._cmdb_postfix_columns = []
-    if self.__cmdb_postfix_column_settings.get("delete"):
+    if self._cmdb_postfix_column_settings.get("delete"):
       self._cmdb_postfix_columns.append("DELETED")
-    if self.__cmdb_postfix_column_settings.get("empty"):
+    if self._cmdb_postfix_column_settings.get("empty"):
       self._cmdb_postfix_columns.append("")
 
     return self._get_postfix_column(*args, **kwargs)
 
-  def __set_cmdb_postfix_columns(self, include_delete_column, include_empty_column, *args, **kwargs):
-    self.__cmdb_postfix_column_settings = {
+  def __set_cmdb_postfix_columns(self, auto_load = None, include_delete_column = False, include_empty_column = False, *args, **kwargs):
+    if auto_load is not None:   
+      if hasattr(auto_load, "_cmdb_postfix_column_settings"):
+        return self.__set_cmdb_postfix_columns(**auto_load.__set_cmdb_postfix_columns)
+      
+    self._cmdb_postfix_column_settings = {
       "delete": include_delete_column,
       "empty": include_empty_column,
     }
@@ -57,13 +64,21 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   def get_cloud_client(self, *args, **kwargs):
     return self.__cmdb_cloud_client
   
-  def __set_cloud_client(self, cloud_client, *args, **kwargs):
+  def __set_cloud_client(self, auto_load = None, cloud_client = None, *args, **kwargs):
+    if auto_load is not None:
+      if auto_load.get_cloud_client() is not None:
+        return self.__set_cloud_client(cloud_client= auto_load.get_cloud_client())
+
     self.__cmdb_cloud_client = cloud_client
 
   def get_cmdb_data_containers(self, *args, **kwargs):
     return self.__cmdb_data_containers
   
-  def __set_cmdb_data_containers(self, data_containers, *args, **kwargs):
+  def __set_cmdb_data_containers(self, auto_load = None, data_containers, *args, **kwargs):
+    if auto_load is not None:
+      if auto_load.get_cmdb_data_containers() is not None:
+        return self.__set_cmdb_data_containers(data_containers= auto_load.get_cmdb_data_containers())
+
     self.__cmdb_data_containers = data_containers
 
   def get_cmdb_data_containers_columns(self, *args, **kwargs):
@@ -71,14 +86,18 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       return self._cmdb_data_containers_columns
 
     self._cmdb_data_containers_columns = {}
-    for key, columns in self.get_cmdb_data_containers_columns().items():
+    for key, columns in self.__cmdb_data_containers_columns_raw.items():
       self._cmdb_data_containers_columns[key] = (self._get_prefix_column() +
         columns +
         self._get_postfix_column())
     
     return self.get_cmdb_data_containers_columns()
   
-  def __set_cmdb_data_containers_columns(self, container_columns, *args, **kwargs):
+  def __set_cmdb_data_containers_columns(self, auto_load= None, container_columns= None, *args, **kwargs):
+    if auto_load is not None:
+      if auto_load.get_cmdb_data_containers() is not None:
+        return self.__set_cmdb_data_containers_columns(container_columns= auto_load.get_cmdb_data_containers_columns())
+
     self.__cmdb_data_containers_columns_raw = container_columns
     
   

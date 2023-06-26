@@ -1,6 +1,6 @@
 from threemystic_common.base_class.base_provider import base
-import abc
 import asyncio, concurrent.futures
+from abc import abstractmethod
 
 class cloud_cmdb_provider_base_cmdb(base):
   def __init__(self, *args, **kwargs):
@@ -12,6 +12,7 @@ class cloud_cmdb_provider_base_cmdb(base):
     self._set_cloud_cmdb(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
     self.__set_cmdb_data_action(*args, **kwargs)
+    self.__set_cmdb_cloud_share(*args, **kwargs)
 
   def _get_default_columns_cmdb_raw(self, *args, **kwargs):
     if hasattr(self, "_columns_cmdb_raw"):
@@ -29,34 +30,34 @@ class cloud_cmdb_provider_base_cmdb(base):
     }
     return self._get_default_columns_cmdb_raw()
   
-  @abc.abstractclassmethod
+  @abstractmethod
   def generate_resource_tags_csv(self, tags, seperator=",", tag_attribute_seperator=":", *args, **kwargs):
         pass
-  @abc.abstractclassmethod
+  @abstractmethod
   def _load_cmdb_general_data(self, *args, **kwargs):
     pass
   
-  @abc.abstractclassmethod
+  @abstractmethod
   def _load_cmdb_column_data(self, *args, **kwargs):
     pass
   
-  @abc.abstractclassmethod
+  @abstractmethod
   def _get_default_columns_raw(self, *args, **kwargs):
     pass
 
-  @abc.abstractclassmethod
+  @abstractmethod
   def get_account_environment(self, *args, **kwargs):
     pass
   
-  @abc.abstractclassmethod
+  @abstractmethod
   def _get_report_default_row(self, account, *args, **kwargs):
     pass
   
-  @abc.abstractclassmethod
+  @abstractmethod
   def _get_report_default_row_cmdb(self, account, *args, **kwargs):
     pass
   
-  @abc.abstractclassmethod
+  @abstractmethod
   def generate_tag_columns(self, account, resource, is_cmdb = False, *args, **kwargs):
     pass
   
@@ -80,6 +81,8 @@ class cloud_cmdb_provider_base_cmdb(base):
         continue
 
       default_columns.append(column.get("cmdb").get("display"))
+    
+    return default_columns
 
   def get_item_data_value(self, item_data, value_key, *args, **kwargs):
     if self.get_common().helper_type().general().is_type(value_key, str):
@@ -305,10 +308,22 @@ class cloud_cmdb_provider_base_cmdb(base):
     return self.get_excel_workbook(sheet_key= sheet_key, *args, **kwargs)
 
   def get_cmdb_data_action(self, *args, **kwargs):
-    return self.cmdb_data_action
+    return self.__cmdb_data_action
   
   def __set_cmdb_data_action(self, data_action, *args, **kwargs):
-    self.cmdb_data_action = data_action
+    self.__cmdb_data_action = data_action
+
+  def get_cmdb_cloud_share(self, *args, **kwargs):
+    return self.__cmdb_connector
+  
+  def __set_cmdb_cloud_share(self,*args, **kwargs):
+    from threemystic_cloud_cmdb.cloud_providers.general.cmdb_connector.auto_cmdb_connector import cloud_cmdb_general_cmdb_connector_auto as cmdb_connector
+    self.__cmdb_connector = cmdb_connector(
+      common= self.get_common(),
+      logger= self.get_common().get_logger(),
+      cloud_client= self.get_cloud_client(),
+      container_columns= self.get_default_columns_cmdb()
+    ).get_connector()
 
   def get_data_start(self, *args, **kwargs):
     return self.__data_start

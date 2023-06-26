@@ -156,7 +156,7 @@ class cloud_cmdb_provider_base_client(base):
   def get_data_action(self, action = None, *args, **kwargs):
 
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):
-      return self.get_data_action_raw().get(self._data_action_data["default"])
+      return self.get_data_action_raw().get("default")
       
     if self.get_data_action_raw().get(action) is not None:
       return self.get_data_action_raw().get(action)
@@ -173,11 +173,11 @@ class cloud_cmdb_provider_base_client(base):
       actions = [self.get_common().helper_type().string().set_case(string_value= action["const"]) for action in self.get_default_parser_args() if self.get_common().helper_type().string().set_case(string_value= action["const"])]
     
     running_tasks = []
-    with concurrent.futures.ThreadPoolExecutor(self.get_max_thread_pool()) as pool:
+    with concurrent.futures.ThreadPoolExecutor(self.get_cloud_cmdb().get_max_thread_pool()) as pool:
       for action in actions:
         if self.get_common().helper_type().string().set_case(string_value= action) == "all":
           continue
-        process_data_action = self.process_data_action(provider= provider, action= action, *args, **kwargs)
+        process_data_action = self._process_data_action(provider= provider, action= action, *args, **kwargs)
         running_tasks = asyncio.get_event_loop().create_task(process_data_action.main(pool= pool))
       
       await asyncio.wait(running_tasks)
