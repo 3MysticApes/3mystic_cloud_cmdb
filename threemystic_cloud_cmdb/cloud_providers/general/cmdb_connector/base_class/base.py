@@ -67,9 +67,18 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     self.__cmdb_data_containers = data_containers
 
   def get_cmdb_data_containers_columns(self, *args, **kwargs):
-    return self.__cmdb_data_containers_columns
+    if hasattr(self, "_cmdb_data_containers_columns"):
+      return self._cmdb_data_containers_columns
+
+    self._cmdb_data_containers_columns = {}
+    for key, columns in self.get_cmdb_data_containers_columns().items():
+      self._cmdb_data_containers_columns[key] = (self._get_prefix_column() +
+        columns +
+        self._get_postfix_column())
+    
+    return self.get_cmdb_data_containers_columns()
   
   def __set_cmdb_data_containers_columns(self, container_columns, *args, **kwargs):
-    self.__cmdb_data_containers_columns = container_columns
+    self.__cmdb_data_containers_columns_raw = container_columns
     
   
