@@ -23,6 +23,10 @@ class cloud_cmdb_azure_client_action(base):
         "include_region": False,
         "include_resourcegroup": False,
         "include_requiredtags": False,
+        "cmdb_connector": {
+          "include_delete_column": False
+        }
+        
       }
     }
     return self._load_cmdb_general_data()
