@@ -73,13 +73,15 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         resource_id= self._get_ms_graph_resource_id(), 
         base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self._get_ms_graph_drive_id()[-1].get('id') )}/children")
     )
-    for item in local_drive_options:
-      if item.get("file") is not None:
-        continue
-      if item.get("name") != self.get_cmdb_name():
-        continue
 
-      self.__set_cmdb_file(file_details= item)
+    if local_drive_options.get("value") != None:
+      for item in local_drive_options.get("value"):
+        if item.get("file") is not None:
+          continue
+        if item.get("name") != self.get_cmdb_name():
+          continue
+
+        self.__set_cmdb_file(file_details= item)
 
     if self.get_cmdb_file() is not None:
       return

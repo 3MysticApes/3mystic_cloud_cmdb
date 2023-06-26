@@ -108,7 +108,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   def __set_cmdb_data_containers_columns(self, auto_load= None, container_columns= None, *args, **kwargs):
     if auto_load is not None:
       if auto_load.get_cmdb_data_containers() is not None:
-        return self.__set_cmdb_data_containers_columns(container_columns= auto_load.get_cmdb_data_containers_columns())
+        return self.__set_cmdb_data_containers_columns(container_columns= auto_load.__cmdb_data_containers_columns_raw)
 
     self.__cmdb_data_containers_columns_raw = container_columns
     

@@ -9,6 +9,7 @@ class cloud_cmdb_azure_client_action_base(base):
       return self._columns_raw
     self._columns_raw = [
       {
+        "id":  "TenantId",
         "display": "TenantId",
         "handler": lambda item: self.get_cloud_client().get_tenant_id(tenant= item["account"], is_account= True),
         "cmdb": {
@@ -16,6 +17,7 @@ class cloud_cmdb_azure_client_action_base(base):
         }
       },
       {
+        "id":  "AccountId",
         "display": "SubscriptionId",
         "handler": lambda item: self.get_cloud_client().get_account_id(account = item["account"]),
         "cmdb": {
@@ -23,6 +25,7 @@ class cloud_cmdb_azure_client_action_base(base):
         }
       },
       {
+        "id":  "Account",
         "display": "Subscription",
         "handler": lambda item: self.get_cloud_client().get_account_name(account = item["account"]),
         "cmdb": {
@@ -117,21 +120,10 @@ class cloud_cmdb_azure_client_action_base(base):
   def _get_report_default_row_cmdb(self, account, *args, **kwargs):
     return_data = {}
     for column in self._get_default_columns_raw():
-      display = column.get("display")
-      if column.get("cmdb") is None:
-        return_data[display] = column.get("handler")({"account": account})
-        continue
+      if column.get("cmdb") is not None:
+        if column.get("cmdb").get("hidden") is True:
+          continue
 
-      if column.get("cmdb").get("hidden") == True:
-        continue
-
-      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= column.get("cmdb").get("display")):
-        display = column.get("cmdb").get("display")
-        
-      if column.get("cmdb").get("handler") is None:
-        return_data[display] = column.get("handler")({"account": account})
-        continue
-
-      return_data[display] = column.get("cmdb").get("handler")({"account": account})
+      return_data[column.get("id")] = column.get("handler")({"account": account})
     
     return return_data
