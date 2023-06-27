@@ -13,8 +13,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   
   def _validate_cmdb_init(self, *args, **kwargs):
     self._validate_cmdb_file()
-    # self._validate_workbook_worksheets()
-    # self._validate_workbook_worksheets_tables()
+    self._validate_workbook_worksheets()
+    self._validate_workbook_worksheets_tables()
 
 
     self._get_ms_graph().close_session(session_config = {
