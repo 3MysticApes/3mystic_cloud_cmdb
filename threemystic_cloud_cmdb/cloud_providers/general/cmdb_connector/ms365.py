@@ -15,6 +15,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     self._validate_cmdb_file()
     self._validate_workbook_worksheets()
     self._validate_workbook_worksheets_tables()
+    self._validate_workbook_worksheets_tables_columns()
+    
 
 
     self._get_ms_graph().close_session(session_config = {
@@ -240,6 +242,13 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     
     for table in table_response.get("value"):
       if table.get("name") == self._get_workbook_table_name(sheet_name= sheet_name):
+        table["extra_columns"] = self._get_ms_graph().send_request(
+          url = self._get_ms_graph().generate_graph_url(
+            resource= self._get_ms_graph_resource(), 
+            resource_id= self._get_ms_graph_resource_id(), 
+            base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{table.get('id')}/columns?$select=id,index,name"),
+            method= "get"
+        )
         return table
       
     return self._add_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name)
@@ -309,6 +318,15 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         method= "patch"
     )
 
+  def _validate_workbook_worksheets_tables_columns(self, *args, **kwargs):
+    self._worksheet_table_data = {}
+    for sheet_key in self.get_cmdb_data_containers_key_display().keys():
+      self._validate_workbook_worksheets_tables_column(sheet_key= sheet_key)
+  
+  
+  def _validate_workbook_worksheets_tables_column(self, sheet_key, *args, **kwargs):
+    print(self.get_cmdb_data_containers_columns().get(sheet_key))
+    # print(self._get_worksheet_table_data()[sheet_key])
 
     
 
