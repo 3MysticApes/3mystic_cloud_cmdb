@@ -13,12 +13,29 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   
   def _validate_cmdb_init(self, *args, **kwargs):
     self._validate_cmdb_file()
-    self._validate_workbook_worksheets()
-    self._validate_workbook_worksheets_tables()
+    # self._validate_workbook_worksheets()
+    # self._validate_workbook_worksheets_tables()
+
+
+    self._get_ms_graph().close_session(session_config = {
+      "type":"workbook",
+      "drive_id": self.get_cmdb_file().get('id'),
+      "persist_changes": True,
+      "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
+    })
 
   def _get_workbook_table_name(self, sheet_name, *args, **kwargs):
-    return f'cmdb_{sheet_name}'
+    return f'cmdb_{self.get_cmdb_data_containers_display_key()[sheet_name]}'
 
+  def get_cmdb_name(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_name_ext"):
+      return self._cmdb_name_ext
+    
+    if not super().get_cmdb_name().endswith(".xlsx"):
+      self._cmdb_name_ext = f"{super().get_cmdb_name()}.xlsx"
+    
+    return self.get_cmdb_name(*args, **kwargs)
+  
   def _get_ms_graph_drive_id(self, *args, **kwargs):
     if hasattr(self, "_ms365_graph_drive_id"):
       return self._ms365_graph_drive_id
@@ -76,13 +93,16 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
     if local_drive_options.get("value") != None:
       for item in local_drive_options.get("value"):
-        if item.get("file") is not None:
-          continue
         if item.get("name") != self.get_cmdb_name():
           continue
 
-        self.__set_cmdb_file(file_details= item)
+        if item.get("file") is None:
+          continue
+        
 
+        self.__set_cmdb_file(file_details= item)
+        break
+    
     if self.get_cmdb_file() is not None:
       return
     
@@ -97,10 +117,10 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     excel_doc = Workbook()
     while len(excel_doc.sheetnames) > 0:
       excel_doc.remove(excel_doc[excel_doc.sheetnames[0]])
-
-    for sheet_name in self.get_cmdb_data_containers():
+    
+    for sheet_key, sheet_name in self.get_cmdb_data_containers_key_display().items():
       excel_sheet = excel_doc.create_sheet(sheet_name)
-      excel_sheet.append(self.get_cmdb_data_containers_columns().get(sheet_name))
+      excel_sheet.append(self.get_cmdb_data_containers_columns().get(sheet_key))
       excel_sheet.freeze_panes = "A2"
     
     
@@ -144,22 +164,22 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
     self._worksheet_data = None
     if worksheets_response.get("value") is None:
-      for worksheet_name in self.get_cmdb_data_containers():
-        self._add_workbook_worksheet(sheet_name= worksheet_name)
+      for sheet_name in self.get_cmdb_data_containers_key_display().values():
+        self._add_workbook_worksheet(sheet_name= sheet_name)
       return self._validate_workbook_worksheets(*args, **kwargs)
     
     if len(worksheets_response.get("value")) < 1:
-      for worksheet_name in self.get_cmdb_data_containers():
-        self._add_workbook_worksheet(sheet_name= worksheet_name)
+      for sheet_name in self.get_cmdb_data_containers_key_display().values():
+        self._add_workbook_worksheet(sheet_name= sheet_name)
       return self._validate_workbook_worksheets(*args, **kwargs)
     
-    self._worksheet_data = {worksheet["name"]:worksheet for worksheet in worksheets_response["value"]}
+    self._worksheet_data = {self.get_cmdb_data_containers_display_key()[worksheet["name"]]:worksheet for worksheet in worksheets_response["value"]}
     missing_worksheets = False
-    for worksheet_name in self.get_cmdb_data_containers():
-      if self._worksheet_data.get(worksheet_name) is not None:
+    for data_container_key, data_container_display in self.get_cmdb_data_containers_key_display().items():
+      if self._worksheet_data.get(data_container_key) is not None:
         continue
 
-      self._add_workbook_worksheet(sheet_name= worksheet_name)
+      self._add_workbook_worksheet(sheet_key= data_container_key,sheet_name= data_container_display)
       missing_worksheets = True
     
     if missing_worksheets:      
@@ -167,7 +187,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     
     return None
 
-  def _add_workbook_worksheet(self, sheet_name, *args, **kwargs):
+  def _add_workbook_worksheet(self, sheet_key, sheet_name, *args, **kwargs):
     
     self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
@@ -187,15 +207,15 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         method= "post"
     )
 
-    self.init_workbook_worksheet(sheet_name= sheet_name)
+    self.init_workbook_worksheet(sheet_key= sheet_key, sheet_name= sheet_name)
   
-  def init_workbook_worksheet(self, sheet_name, *args, **kwargs):
+  def init_workbook_worksheet(self, sheet_key, sheet_name, *args, **kwargs):
     
     return self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_name].get('id')}/range(address='A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_name)))}1')"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/range(address='A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_name)))}1')"),
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -208,33 +228,39 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         method= "patch"
     )
   
-  def _validate_workbook_worksheets_table(self, sheet_name, table_response, *args, **kwargs):
+  def _validate_workbook_worksheets_table(self, sheet_key, sheet_name, table_response, *args, **kwargs):
     if table_response is None:
-      return self._add_workbook_worksheet_table(sheet_name= sheet_name)
+      return self._add_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name)
 
     if table_response.get("value") is None:
-      return self._add_workbook_worksheet_table(sheet_name= sheet_name)
+      return self._add_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name)
 
     if len(table_response.get("value")) < 1:
-      return self._add_workbook_worksheet_table(sheet_name= sheet_name)
+      return self._add_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name)
     
     for table in table_response.get("value"):
       if table.get("name") == self._get_workbook_table_name(sheet_name= sheet_name):
         return table
       
-    return self._add_workbook_worksheet_table(sheet_name= sheet_name)
+    return self._add_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name)
 
+  def _get_worksheet_table_data(self, *args, **kwargs):
+    if hasattr(self, "_worksheet_table_data"):
+      return self._worksheet_table_data
+    
+    return None
+  
   def _validate_workbook_worksheets_tables(self, *args, **kwargs):
     self._worksheet_table_data = {}
-    for sheet_name in self.get_cmdb_data_containers():
-      self._worksheet_table_data[sheet_name] = self._validate_workbook_worksheets_table(sheet_name= sheet_name, table_response= self._get_workbook_worksheet_table(sheet_name= sheet_name))
+    for sheet_key, sheet_name in self.get_cmdb_data_containers_key_display().items():
+      self._worksheet_table_data[sheet_key] = self._validate_workbook_worksheets_table(sheet_key= sheet_key, sheet_name= sheet_name, table_response= self._get_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name))
 
-  def _get_workbook_worksheet_table(self, sheet_name, *args, **kwargs):
+  def _get_workbook_worksheet_table(self, sheet_key, sheet_name, *args, **kwargs):
     return self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_name].get('id')}/tables"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables"),
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -244,12 +270,12 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         method= "get"
     )
 
-  def _add_workbook_worksheet_table(self, sheet_name, *args, **kwargs):
+  def _add_workbook_worksheet_table(self, sheet_key, sheet_name, *args, **kwargs):
     response = self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_name].get('id')}/tables/add"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/add"),
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -257,7 +283,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
           "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
         },
         data = {
-        "address": f"{sheet_name}!A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_name)))}1",
+        "address": f"{sheet_name}!A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_key)))}1",
         "hasHeaders": True
         },
         params={"@microsoft.graph.conflictBehavior": "replace"},
@@ -266,11 +292,12 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
     table_id = response.pop("id")
     response["name"] = self._get_workbook_table_name(sheet_name= sheet_name)
+    
     return self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_name].get('id')}/tables/{table_id}"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{table_id}"),
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -279,7 +306,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         },
         data = response,
         params={"@microsoft.graph.conflictBehavior": "replace"},
-        method= "post"
+        method= "patch"
     )
 
 

@@ -32,34 +32,30 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     if hasattr(self, "_cmdb_postfix_columns"):
       return self._cmdb_postfix_columns
     
-    self._cmdb_postfix_columns = []
-    if self._cmdb_postfix_column_settings.get("delete"):
-      self._cmdb_postfix_columns.append("DELETED")
-    if self._cmdb_postfix_column_settings.get("empty"):
-      self._cmdb_postfix_columns.append("")
+    self._cmdb_postfix_columns = {}
+    for data_container_key, settings in self._cmdb_postfix_column_settings.items():
+      self._cmdb_postfix_columns[data_container_key] = []
+      if settings.get("include_delete_column"):
+        self._cmdb_postfix_columns[data_container_key].append("DELETED")
+      if settings.get("include_empty_column"):
+        self._cmdb_postfix_columns[data_container_key].append("")
+
 
     return self._get_postfix_column(*args, **kwargs)
 
-  def __set_cmdb_postfix_columns(self, auto_load = None, data_container_settings = None, *args, **kwargs):
-    if auto_load is not None:   
-      if hasattr(auto_load, "_cmdb_postfix_column_settings"):
-        return self.__set_cmdb_postfix_columns(data_container_settings= auto_load._cmdb_postfix_column_settings)
+  def __set_cmdb_postfix_columns(self, *args, **kwargs):
     
     self._cmdb_postfix_column_settings = {}
-    if data_container_settings is None:
-      data_container_settings = {}
-    for data_container in self.get_cmdb_data_containers():
-      self._cmdb_postfix_column_settings[data_container] = self.get_common().helper_type().dictionary().merge_dictionary([
-        {},
-        data_container_settings.get(data_container) if data_container_settings.get(data_container) is not None else {},
-        {
-          "delete": True,
-          "empty": True,
-        }
-      ])
 
-      
-    data_container_settings
+    for data_container_key, data_container_data in self.get_cmdb_data_containers().items():
+      self._cmdb_postfix_column_settings[data_container_key] = self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        {
+          "include_delete_column": True,
+          "include_empty_column": True,
+        },
+        data_container_data.get("cmdb_connector") if  data_container_data.get("cmdb_connector") is not None else {},
+      ])
     
 
   def get_cmdb_name(self, *args, **kwargs):
@@ -90,18 +86,69 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     if auto_load is not None:
       if auto_load.get_cmdb_data_containers() is not None:
         return self.__set_cmdb_data_containers(data_containers= auto_load.get_cmdb_data_containers())
-
+    
     self.__cmdb_data_containers = data_containers
+
+  def get_cmdb_data_containers_column_names(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_data_containers_columns_name"):
+      return self._cmdb_data_containers_columns_name
+    
+    return None
+  
+  def _get_cmdb_data_containers_hidden(self, container, *args, **kwargs):
+    if container.get("cmdb") is None:
+      return (container.get("hidden") is True)
+    
+    if container.get("cmdb").get(self.get_cloud_share()) is not None:
+      if container.get("cmdb").get(self.get_cloud_share()).get("hidden") is not None:
+        return (container.get("cmdb").get(self.get_cloud_share()).get("hidden") is True)
+      
+    if container.get("cmdb").get("hidden") is not None:
+      return (container.get("cmdb").get("hidden") is True)
+
+
+    return False
+
+  def _get_cmdb_data_containers_display(self, container, *args, **kwargs):
+    if container.get("cmdb") is None:
+      return (container.get("display"))
+    
+    if container.get("cmdb").get(self.get_cloud_share()) is not None:
+      if "display" in container.get("cmdb").get(self.get_cloud_share()):
+        return container.get("cmdb").get(self.get_cloud_share()).get("display")
+      
+    if "display" in container.get("cmdb"):
+      return container.get("cmdb").get("display")
+
+
+    return container.get("display")
+
+
+  def _set_cmdb_data_containers_column_names(self, container_name, columns, *args, **kwargs):    
+    if not hasattr(self, "_cmdb_data_containers_columns_name"):
+      self._cmdb_data_containers_columns_name = {}
+    
+    self._cmdb_data_containers_columns_name[container_name] = {}
+    for column in columns:
+  
+      if self._get_cmdb_data_containers_hidden(container= column):
+        continue
+
+      self._cmdb_data_containers_columns_name[container_name][column["id"]] = {
+        "display": self._get_cmdb_data_containers_display(container= column)
+      }
+
+
 
   def get_cmdb_data_containers_columns(self, *args, **kwargs):
     if hasattr(self, "_cmdb_data_containers_columns"):
       return self._cmdb_data_containers_columns
-
+    
     self._cmdb_data_containers_columns = {}
-    for key, columns in self.__cmdb_data_containers_columns_raw.items():
-      self._cmdb_data_containers_columns[key] = (self._get_prefix_column() +
-        columns +
-        self._get_postfix_column())
+    for data_container in self.__cmdb_data_containers_columns_raw.keys():
+      self._cmdb_data_containers_columns[data_container] = (self._get_prefix_column() +
+        [ self._get_cmdb_data_containers_display(container= item) for item in self.get_cmdb_data_containers_column_names()[data_container].values() if not self._get_cmdb_data_containers_hidden(container= item) ] +
+        self._get_postfix_column()[data_container])
     
     return self.get_cmdb_data_containers_columns()
   
@@ -111,5 +158,23 @@ class cloud_cmdb_general_cmdb_connector_base(base):
         return self.__set_cmdb_data_containers_columns(container_columns= auto_load.__cmdb_data_containers_columns_raw)
 
     self.__cmdb_data_containers_columns_raw = container_columns
+    for data_container, columns in self.__cmdb_data_containers_columns_raw.items():
+      self._set_cmdb_data_containers_column_names(container_name= data_container, columns= columns)
     
+  def get_cmdb_data_containers_key_display(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_data_containers_key_display"):
+      return self._cmdb_data_containers_key_display
+    
+    self._cmdb_data_containers_key_display = {
+      data_container_key:self._get_cmdb_data_containers_display(container= data_container) for data_container_key, data_container in self.get_cmdb_data_containers().items()
+    }
+    return self.get_cmdb_data_containers_key_display(*args, **kwargs)
   
+  def get_cmdb_data_containers_display_key(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_data_containers_display_key"):
+      return self._cmdb_data_containers_display_key
+    
+    self._cmdb_data_containers_display_key = {
+      data_container_display:data_container_key for data_container_key, data_container_display in self.get_cmdb_data_containers_key_display().items()
+    }
+    return self.get_cmdb_data_containers_display_key(*args, **kwargs)
