@@ -47,7 +47,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       if settings.get("include_empty_column"):
         self._cmdb_postfix_columns[data_container_key].append({
           "id": "empty",
-          "display": "",
+          "display": "_",
         })
 
 
@@ -154,8 +154,8 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     
     self._cmdb_data_containers_columns_raw_display_byid = {}
     for data_container in self.__cmdb_data_containers_columns_raw.keys():
-      self._cmdb_data_containers_columns_raw_byid_display[data_container] = {
-       display:id for id, display in self.get_cmdb_data_containers_columns_raw_byid_display().items()
+      self._cmdb_data_containers_columns_raw_display_byid[data_container] = {
+       str(display):str(id) for id, display in self.get_cmdb_data_containers_columns_raw_byid_display()[data_container].items()
       }
     
     return self.get_cmdb_data_containers_columns_raw_display_byid()

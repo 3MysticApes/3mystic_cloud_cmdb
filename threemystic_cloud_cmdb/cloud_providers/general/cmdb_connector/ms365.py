@@ -249,6 +249,16 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
             base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{table.get('id')}/columns?$select=id,index,name"),
             method= "get"
         )
+        if table["extra_columns"] is None:
+          table["extra_columns"] = {}
+
+        if table["extra_columns"].get("value") is None:
+          table["extra_columns"]["value"]= []
+        
+        table["extra_columns"]["value"]= {
+          column.get("name"):column
+          for column in table["extra_columns"]["value"]}
+          
         return table
       
     return self._add_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= sheet_name)
@@ -319,14 +329,59 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     )
 
   def _validate_workbook_worksheets_tables_columns(self, *args, **kwargs):
-    self._worksheet_table_data = {}
     for sheet_key in self.get_cmdb_data_containers_key_display().keys():
       self._validate_workbook_worksheets_tables_column(sheet_key= sheet_key)
   
-  
+  def _add_workbook_worksheets_tables_column(self, sheet_key, column, index, *args, **kwargs):
+    return self._get_ms_graph().send_request(
+      url = self._get_ms_graph().generate_graph_url(
+        resource= self._get_ms_graph_resource(), 
+        resource_id= self._get_ms_graph_resource_id(), 
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/columns/add"),
+        session_config = {
+          "type":"workbook",
+          "drive_id": self.get_cmdb_file().get('id'),
+          "persist_changes": True,
+          "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
+        },
+        data = {
+          "index": index,
+          "name": column
+        },
+        params={"@microsoft.graph.conflictBehavior": "replace"},
+        method= "post"
+    )
+
   def _validate_workbook_worksheets_tables_column(self, sheet_key, *args, **kwargs):
-    for column in self._get_worksheet_table_data()[sheet_key].get("extra_columns"):
-      print(column)
+    column_index = -1
+    add_columns = []
+    for column in self.get_cmdb_data_containers_columns_raw_display_byid()[sheet_key].keys():
+      column_index += 1
+      if column not in self._get_worksheet_table_data()[sheet_key].get("extra_columns").get("value"):        
+        add_columns.append({
+          "index": column_index,
+          "previous_index": column_index - 1,
+          "next_index": column_index + 1,
+          "column": column
+        })
+    if len(add_columns) < 1:
+      return
+  
+    for column in add_columns:
+      self._add_workbook_worksheets_tables_column(
+        sheet_key=sheet_key,
+        column= column.get("column"),
+        index= column["index"]
+      )
+    
+    self._worksheet_table_data[sheet_key] = self._validate_workbook_worksheets_table(
+      sheet_key= sheet_key, sheet_name= self.get_cmdb_data_containers_key_display()[sheet_key], 
+      table_response= self._get_workbook_worksheet_table(sheet_key= sheet_key, sheet_name= self.get_cmdb_data_containers_key_display()[sheet_key]))
+
+
+
+    # for column in self._get_worksheet_table_data()[sheet_key].get("extra_columns").get("value").items():
+    #   print(column)
     # self.get_cmdb_data_containers_columns_raw_display_byid()
     # print(self.get_cmdb_data_containers_columns().get(sheet_key))
     # print(self._get_worksheet_table_data()[sheet_key])
