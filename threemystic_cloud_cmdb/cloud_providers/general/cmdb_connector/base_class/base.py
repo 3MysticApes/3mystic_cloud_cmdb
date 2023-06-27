@@ -12,7 +12,6 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     if(self.has_cloud_share_configured()):
       self._validate_cmdb_init()
 
-
   @abstractmethod
   def get_cloud_share(self, *args, **kwargs):
     pass
@@ -220,3 +219,6 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       data_container_display:data_container_key for data_container_key, data_container_display in self.get_cmdb_data_containers_key_display().items()
     }
     return self.get_cmdb_data_containers_display_key(*args, **kwargs)
+
+  def process_data(self, *args, **kwargs):
+    pass
