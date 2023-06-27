@@ -43,13 +43,11 @@ class cloud_cmdb_general_cmdb_connector_base(base):
         self._cmdb_postfix_columns[data_container_key].append({
           "id": "deleted",
           "display": "DELETED",
-          "handler": lambda item: ""
         })
       if settings.get("include_empty_column"):
         self._cmdb_postfix_columns[data_container_key].append({
           "id": "empty",
           "display": "",
-          "handler": lambda item: ""
         })
 
 
@@ -150,20 +148,41 @@ class cloud_cmdb_general_cmdb_connector_base(base):
         "display": self._get_cmdb_data_containers_display(container= column)
       }
 
-
-  def get_cmdb_data_containers_columns_raw(self, *args, **kwargs):
-    if hasattr(self, "_cmdb_data_containers_columns_raw"):
-      return self._cmdb_data_containers_columns_raw
+  def get_cmdb_data_containers_columns_raw_display_byid(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_data_containers_columns_raw_display_byid"):
+      return self._cmdb_data_containers_columns_raw_display_byid
     
-    self._cmdb_data_containers_columns_raw = {}
+    self._cmdb_data_containers_columns_raw_display_byid = {}
     for data_container in self.__cmdb_data_containers_columns_raw.keys():
-      self._cmdb_data_containers_columns_raw[data_container] = (
-        self._get_prefix_column() +
-        [ item for item in self.get_cmdb_data_containers_column_names()[data_container].values()] +
-        self._get_postfix_column()[data_container]
+      self._cmdb_data_containers_columns_raw_byid_display[data_container] = {
+       display:id for id, display in self.get_cmdb_data_containers_columns_raw_byid_display().items()
+      }
+    
+    return self.get_cmdb_data_containers_columns_raw_display_byid()
+  
+  def get_cmdb_data_containers_columns_raw_byid_display(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_data_containers_columns_raw_byid_display"):
+      return self._cmdb_data_containers_columns_raw_byid_display
+    
+    self._cmdb_data_containers_columns_raw_byid_display = {}
+    for data_container in self.__cmdb_data_containers_columns_raw.keys():
+      self._cmdb_data_containers_columns_raw_byid_display[data_container] = (
+        self.get_common().helper_type().dictionary().merge_dictionary([
+          {},
+          {
+            prefix.get("id"):self._get_cmdb_data_containers_display(container= prefix) for prefix in self._get_prefix_column()
+          },
+          {
+            id:self._get_cmdb_data_containers_display(container= column) for id, column in self.get_cmdb_data_containers_column_names()[data_container].items()
+          },
+          {
+            postfix.get("id"):self._get_cmdb_data_containers_display(container= postfix) for postfix in self._get_postfix_column()[data_container]
+          },
+        ])
       )
     
-    return self.get_cmdb_data_containers_columns_raw()
+    return self.get_cmdb_data_containers_columns_raw_byid_display()
+
   
   def get_cmdb_data_containers_columns(self, *args, **kwargs):
     if hasattr(self, "_cmdb_data_containers_columns"):
@@ -171,9 +190,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     
     self._cmdb_data_containers_columns = {}
     for data_container in self.__cmdb_data_containers_columns_raw.keys():
-      self._cmdb_data_containers_columns[data_container] = (
-        [ self._get_cmdb_data_containers_display(container= item) for item in self.get_cmdb_data_containers_columns_raw() ]
-      )
+      self._cmdb_data_containers_columns[data_container] = list(self.get_cmdb_data_containers_columns_raw_byid_display()[data_container].values())
     
     return self.get_cmdb_data_containers_columns()
   

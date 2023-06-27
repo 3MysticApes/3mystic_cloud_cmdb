@@ -325,7 +325,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   
   
   def _validate_workbook_worksheets_tables_column(self, sheet_key, *args, **kwargs):
-    print(self.get_cmdb_data_containers_columns().get(sheet_key))
+    print(self.get_cmdb_data_containers_columns_raw_display_byid())
+    # print(self.get_cmdb_data_containers_columns().get(sheet_key))
     # print(self._get_worksheet_table_data()[sheet_key])
 
     
