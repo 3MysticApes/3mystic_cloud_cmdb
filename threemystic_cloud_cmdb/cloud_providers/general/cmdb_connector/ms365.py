@@ -229,7 +229,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         },
         method= "patch"
     )
-  def _validate_workbook_worksheets_table_columns(self, sheet_key, table_id, *args, **kwargs):
+  def _get_workbook_worksheets_table_columns(self, sheet_key, table_id, *args, **kwargs):
     columns = self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
@@ -243,9 +243,10 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     if columns.get("value") is None:
       return []
     
-    return {
+    columns["value"] = {
           column.get("name"):column
           for column in columns["value"]}
+    return columns
 
   def _validate_workbook_worksheets_table(self, sheet_key, sheet_name, table_response, *args, **kwargs):
     if table_response is None:
@@ -259,7 +260,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     
     for table in table_response.get("value"):
       if table.get("name") == self._get_workbook_table_name(sheet_name= sheet_name):
-        table["extra_columns"] = self._validate_workbook_worksheets_table_columns(
+        table["extra_columns"] = self._get_workbook_worksheets_table_columns(
           sheet_key= sheet_key,
           table_id= table.get('id')
         )
@@ -360,12 +361,13 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   def _validate_workbook_worksheets_tables_column(self, sheet_key, *args, **kwargs):
     column_index = -1
     add_columns = []
+    
     if self._get_worksheet_table_data()[sheet_key].get("extra_columns") is None:
-      self._get_worksheet_table_data()[sheet_key]["extra_columns"] = self._validate_workbook_worksheets_table_columns(
+      self._get_worksheet_table_data()[sheet_key]["extra_columns"] = self._get_workbook_worksheets_table_columns(
           sheet_key= sheet_key,
           table_id= self._get_worksheet_table_data()[sheet_key].get('id')
         )
-
+    
     for column in self.get_cmdb_data_containers_columns_raw_display_byid()[sheet_key].keys():
       column_index += 1
 
