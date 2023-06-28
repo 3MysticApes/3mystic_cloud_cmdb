@@ -282,7 +282,7 @@ class cloud_cmdb_provider_base_cmdb(base):
             is_cmdb = True),
           {
             # This needs to be updated to ID
-            self.get_display_column_data(column_data= column_data, is_cmdb= True):self.get_handler_column_data(column_data= column_data, is_cmdb= True)(report_data_item)
+            column_data.get("id"):self.get_handler_column_data(column_data= column_data, is_cmdb= True)(report_data_item)
             for column_data in (self.get_workbook_columns()[sheet_key].values())},
           self.generate_tag_columns(
             account= account, 
@@ -458,7 +458,8 @@ class cloud_cmdb_provider_base_cmdb(base):
         item_key:self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           self._load_cmdb_general_default_column_data(),
-          item_data
+          item_data,
+          {"id": item_key}
         ]) for item_key, item_data in item.items()
       }
         
