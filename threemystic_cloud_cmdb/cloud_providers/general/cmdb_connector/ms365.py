@@ -16,6 +16,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     self._validate_workbook_worksheets()
     self._validate_workbook_worksheets_tables()
     self._validate_workbook_worksheets_tables_columns()
+
+    print(self.get_existing_columns_by_key())
     
 
 
@@ -25,7 +27,20 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       "persist_changes": True,
       "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
     })
+  
+  def get_existing_columns_by_key(self, *args, **kwargs):    
+    if hasattr(self, "_ms365_existing_columns_by_key"):
+      return self._ms365_existing_columns_by_key
+    
+    self._ms365_existing_columns_by_key = {}
+    for container_key, table_data in self._get_worksheet_table_data().items():
+      self._ms365_existing_columns_by_key[container_key] = [
+        sorted_column.get("name") for sorted_column in sorted(list(table_data.get("extra_columns").get("value").values()), key=lambda x: x.get("index"), reverse= False)
+      ]
+    
+    return self.get_existing_columns_by_key()
 
+  
   def _get_workbook_table_name(self, sheet_name, *args, **kwargs):
     return f'cmdb_{self.get_cmdb_data_containers_display_key()[sheet_name]}'
 

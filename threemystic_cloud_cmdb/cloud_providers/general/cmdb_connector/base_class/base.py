@@ -13,6 +13,10 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       self._validate_cmdb_init()
 
   @abstractmethod
+  def get_existing_columns_by_key(self, *args, **kwargs):
+    pass
+
+  @abstractmethod
   def get_cloud_share(self, *args, **kwargs):
     pass
 
@@ -28,7 +32,21 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       "id": "source",
       "display": "Source",
       "handler": lambda item: self.get_cloud_client().get_provider()
+    },
+    {
+      "id": "id",
+      "display": "ID",
+      "handler": lambda item: self.get_common().helper_type().string().set_case(
+        string_value= self.get_common().encryption().hash(hash_method= "sha1").generate_hash(
+          data= self.get_common().helper_type().string().set_case(
+            string_value= f'{self.get_cloud_client().get_provider()}-{item.get("raw_data").get("extra_id")}',
+            case= "lower"
+          ),
+        ),
+        case= "lower"
+      ) 
     }]
+    
     return self._get_prefix_column(*args, **kwargs)
   
   def _get_postfix_column(self, *args, **kwargs):    
@@ -42,11 +60,13 @@ class cloud_cmdb_general_cmdb_connector_base(base):
         self._cmdb_postfix_columns[data_container_key].append({
           "id": "deleted",
           "display": "DELETED",
+          "handler": lambda item: None
         })
       if settings.get("include_empty_column"):
         self._cmdb_postfix_columns[data_container_key].append({
           "id": "empty",
           "display": "_",
+          "handler": lambda item: None
         })
 
 
@@ -220,5 +240,13 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     }
     return self.get_cmdb_data_containers_display_key(*args, **kwargs)
 
-  def process_data(self, *args, **kwargs):
-    pass
+  def process_data(self, report_data, *args, **kwargs):
+    processed_report_data = []
+    for data in report_data:
+      processed_report_data.append((
+        [prefix.get("handler")(data) for prefix in self._get_prefix_column()]+
+
+        [prefix.get("handler")(data) for prefix in self._get_postfix_column()]
+         
+      )) 
+      

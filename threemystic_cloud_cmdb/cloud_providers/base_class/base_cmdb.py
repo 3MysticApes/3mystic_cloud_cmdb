@@ -270,6 +270,7 @@ class cloud_cmdb_provider_base_cmdb(base):
           is_cmdb= True)
       ])
     )
+    self.get_cmdb_workbook(sheet_key= sheet_key)[-1]["raw_data"] = report_data_item
     
 
   def get_excel_workbook(self, sheet_key, *args, **kwargs):    
