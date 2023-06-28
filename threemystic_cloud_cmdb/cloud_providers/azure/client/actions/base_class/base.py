@@ -30,7 +30,7 @@ class cloud_cmdb_azure_client_action_base(base):
         "handler": lambda item: self.get_cloud_client().get_account_name(account = item["account"]),
         "cmdb": {
           "display": "Account",
-          "handler": lambda item: f'{self.get_cloud_client().get_account_id(account = item["account"])} - {self.get_cloud_client().get_tenant_id(tenant = item["account"], is_account= True)}'
+          "handler": lambda item: f'{self.get_cloud_client().get_account_name(account = item["account"])} / {self.get_cloud_client().get_tenant_id(tenant = item["account"], is_account= True)}'
         }
       }
     ]
@@ -120,10 +120,9 @@ class cloud_cmdb_azure_client_action_base(base):
   def _get_report_default_row_cmdb(self, account, *args, **kwargs):
     return_data = {}
     for column in self._get_default_columns_raw():
-      if column.get("cmdb") is not None:
-        if column.get("cmdb").get("hidden") is True:
-          continue
+      if self.get_ishidden_column_data(column_data= column, is_cmdb= True):
+        continue
 
-      return_data[column.get("id")] = column.get("handler")({"account": account})
+      return_data[column.get("id")] = self.get_handler_column_data(column_data= column)({"account": account})
     
     return return_data

@@ -5,6 +5,11 @@ class cloud_cmdb_general_cmdb_connector_auto(base):
   def __init__(self, *args, **kwargs):
     super().__init__(logger_name= "cloud_cmdb_general_cmdb_connector_auto", *args, **kwargs)
   
+  def get_existing_columns_sorted_by_index(self, *args, **kwargs):
+    pass
+  
+  def _sync_data(self, *args, **kwargs):
+    pass
   
   def get_cloud_share(self, *args, **kwargs):
     pass

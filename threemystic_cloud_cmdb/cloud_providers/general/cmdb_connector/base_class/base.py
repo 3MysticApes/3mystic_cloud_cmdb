@@ -13,7 +13,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       self._validate_cmdb_init()
 
   @abstractmethod
-  def get_existing_columns_by_key(self, *args, **kwargs):
+  def get_existing_columns_sorted_by_index(self, *args, **kwargs):
     pass
 
   @abstractmethod
@@ -22,6 +22,10 @@ class cloud_cmdb_general_cmdb_connector_base(base):
 
   @abstractmethod
   def _validate_cmdb_init(self, *args, **kwargs):
+    pass
+
+  @abstractmethod
+  def _sync_data(self, *args, **kwargs):
     pass
   
   def _get_prefix_column(self, *args, **kwargs):    
@@ -34,8 +38,8 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       "handler": lambda item: self.get_cloud_client().get_provider()
     },
     {
-      "id": "id",
-      "display": "ID",
+      "id": "cmdb_id",
+      "display": "cmdbId",
       "handler": lambda item: self.get_common().helper_type().string().set_case(
         string_value= self.get_common().encryption().hash(hash_method= "sha1").generate_hash(
           data= self.get_common().helper_type().string().set_case(
@@ -240,13 +244,36 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     }
     return self.get_cmdb_data_containers_display_key(*args, **kwargs)
 
-  def process_data(self, report_data, *args, **kwargs):
-    processed_report_data = []
-    for data in report_data:
-      processed_report_data.append((
-        [prefix.get("handler")(data) for prefix in self._get_prefix_column()]+
+  def get_report_data_column(self, container_key, report_data_item, column, *args, **kwargs):
+    
+    print(column)
+    column_key = self.get_cmdb_data_containers_columns_raw_display_byid()[container_key].get(column)
+    if column_key is None:
+      return None
+    
+    return report_data_item.get(column_key)
 
-        [prefix.get("handler")(data) for prefix in self._get_postfix_column()]
-         
-      )) 
+  def save_data(self, report_data, *args, **kwargs):
+    self._processed_report_data = {}
+    for container_key, raw_data in report_data.items():
+      self._processed_report_data[container_key] = []
+      print(self.get_cmdb_data_containers_columns_raw_display_byid()[container_key])
+      for data in raw_data:
+        row_data = self.get_common().helper_type().dictionary().merge_dictionary([
+          {},
+          {prefix.get("id"):prefix.get("handler")(data) for prefix in self._get_prefix_column()},
+          {postfix.get("id"):postfix.get("handler")(data) for postfix in self._get_postfix_column()[container_key]},
+          data.get("data")
+        ])
+        self._processed_report_data[container_key].append(
+          [self.get_report_data_column(container_key= container_key, report_data_item= row_data, column= column) for column in self.get_existing_columns_sorted_by_index()[container_key]]
+        )
+      
+        print(len(self._processed_report_data[container_key][0]))
+        print(self._processed_report_data[container_key][0])
+        raise Exception("Test HERE")
+    
+    self._sync_data(*args, **kwargs)
+
+    
       
