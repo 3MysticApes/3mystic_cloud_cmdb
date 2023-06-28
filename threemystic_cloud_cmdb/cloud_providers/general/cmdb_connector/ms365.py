@@ -429,9 +429,6 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       start_index = iteration * self._get_ms_graph().max_batch_size
       end_index = start_index + self._get_ms_graph().max_batch_size
 
-      print(self.get_common().helper_json().dumps(data= {
-              "values": insert_data[start_index:(end_index if end_index < data_len else None)]
-            }))
       return_results.append(
         self._get_ms_graph().send_request(
           url = self._get_ms_graph().generate_graph_url(

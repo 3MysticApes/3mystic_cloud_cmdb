@@ -114,7 +114,6 @@ class cloud_cmdb_provider_base_cmdb(base):
       return None
     
     print(f'Saving report in Shared CMDB')
-    print(self.get_cmdb_workbook(sheet_key= "vmss")[0])
     self.get_cmdb_cloud_share().save_data(
       report_data= self.get_cmdb_workbook(sheet_key= None)
     )
@@ -482,18 +481,14 @@ class cloud_cmdb_provider_base_cmdb(base):
   def get_default_report_columns(self, sheet_key, is_cmdb = False, *args, **kwargs):
 
     default_columns = []
-    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_region") is True:
-      return (
-        (self.get_default_columns() if not is_cmdb else self._get_default_columns_raw(*args, **kwargs)) +
-        ["Region" if not is_cmdb else self._get_default_columns_cmdb_raw()["region"]] +
-        default_columns
-      )
+    if self.get_workbook_general_data(sheet_key= sheet_key).get("include_region") is True:      
+      default_columns.append(self._get_default_columns_cmdb_raw()["region"].get("display") if not is_cmdb else self._get_default_columns_cmdb_raw()["region"])
     
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_resourcegroup") is True:
-      default_columns.append("ResourceGroup" if not is_cmdb else self._get_default_columns_cmdb_raw()["resource_group"])
+      default_columns.append(self._get_default_columns_cmdb_raw()["resource_group"].get("display") if not is_cmdb else self._get_default_columns_cmdb_raw()["resource_group"])
       
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_environment") is True:
-      default_columns.append("Environment" if not is_cmdb else self._get_default_columns_cmdb_raw()["environment"])
+      default_columns.append(self._get_default_columns_cmdb_raw()["environment"].get("display") if not is_cmdb else self._get_default_columns_cmdb_raw()["environment"])
 
     return (
       (self.get_default_columns() if not is_cmdb else self._get_default_columns_raw(*args, **kwargs)) +

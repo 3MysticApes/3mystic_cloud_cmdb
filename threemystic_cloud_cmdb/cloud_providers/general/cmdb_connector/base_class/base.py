@@ -166,7 +166,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   
       if self._get_cmdb_data_containers_hidden(container= column):
         continue
-
+        
       self._cmdb_data_containers_columns_name[container_name][column["id"]] = {
         "display": self._get_cmdb_data_containers_display(container= column)
       }
@@ -176,7 +176,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       return self._cmdb_data_containers_columns_raw_display_byid
     
     self._cmdb_data_containers_columns_raw_display_byid = {}
-    for data_container in self.__cmdb_data_containers_columns_raw.keys():
+    for data_container in self._raw_cmdb_data_containers_columns.keys():
       self._cmdb_data_containers_columns_raw_display_byid[data_container] = {
        str(display):str(id) for id, display in self.get_cmdb_data_containers_columns_raw_byid_display()[data_container].items()
       }
@@ -188,7 +188,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       return self._cmdb_data_containers_columns_raw_byid_display
     
     self._cmdb_data_containers_columns_raw_byid_display = {}
-    for data_container in self.__cmdb_data_containers_columns_raw.keys():
+    for data_container in self._raw_cmdb_data_containers_columns.keys():
       self._cmdb_data_containers_columns_raw_byid_display[data_container] = (
         self.get_common().helper_type().dictionary().merge_dictionary([
           {},
@@ -212,7 +212,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       return self._cmdb_data_containers_columns
     
     self._cmdb_data_containers_columns = {}
-    for data_container in self.__cmdb_data_containers_columns_raw.keys():
+    for data_container in self._raw_cmdb_data_containers_columns.keys():
       self._cmdb_data_containers_columns[data_container] = list(self.get_cmdb_data_containers_columns_raw_byid_display()[data_container].values())
     
     return self.get_cmdb_data_containers_columns()
@@ -220,10 +220,10 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   def __set_cmdb_data_containers_columns(self, auto_load= None, container_columns= None, *args, **kwargs):
     if auto_load is not None:
       if auto_load.get_cmdb_data_containers() is not None:
-        return self.__set_cmdb_data_containers_columns(container_columns= auto_load.__cmdb_data_containers_columns_raw)
+        return self.__set_cmdb_data_containers_columns(container_columns= auto_load._raw_cmdb_data_containers_columns)
 
-    self.__cmdb_data_containers_columns_raw = container_columns
-    for data_container, columns in self.__cmdb_data_containers_columns_raw.items():
+    self._raw_cmdb_data_containers_columns = container_columns
+    for data_container, columns in self._raw_cmdb_data_containers_columns.items():
       self._set_cmdb_data_containers_column_names(container_name= data_container, columns= columns)
     
   def get_cmdb_data_containers_key_display(self, *args, **kwargs):
@@ -246,8 +246,8 @@ class cloud_cmdb_general_cmdb_connector_base(base):
 
   def get_report_data_column(self, container_key, report_data_item, column, *args, **kwargs):
     
-    print(column)
     column_key = self.get_cmdb_data_containers_columns_raw_display_byid()[container_key].get(column)
+
     if column_key is None:
       return None
     
@@ -257,7 +257,6 @@ class cloud_cmdb_general_cmdb_connector_base(base):
     self._processed_report_data = {}
     for container_key, raw_data in report_data.items():
       self._processed_report_data[container_key] = []
-      print(self.get_cmdb_data_containers_columns_raw_display_byid()[container_key])
       for data in raw_data:
         row_data = self.get_common().helper_type().dictionary().merge_dictionary([
           {},
@@ -268,10 +267,6 @@ class cloud_cmdb_general_cmdb_connector_base(base):
         self._processed_report_data[container_key].append(
           [self.get_report_data_column(container_key= container_key, report_data_item= row_data, column= column) for column in self.get_existing_columns_sorted_by_index()[container_key]]
         )
-      
-        print(len(self._processed_report_data[container_key][0]))
-        print(self._processed_report_data[container_key][0])
-        raise Exception("Test HERE")
     
     self._sync_data(*args, **kwargs)
 

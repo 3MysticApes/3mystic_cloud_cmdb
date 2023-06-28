@@ -123,6 +123,6 @@ class cloud_cmdb_azure_client_action_base(base):
       if self.get_ishidden_column_data(column_data= column, is_cmdb= True):
         continue
 
-      return_data[column.get("id")] = self.get_handler_column_data(column_data= column)({"account": account})
+      return_data[column.get("id")] = self.get_handler_column_data(column_data= column, is_cmdb= True)({"account": account})
     
     return return_data
