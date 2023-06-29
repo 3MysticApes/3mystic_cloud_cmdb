@@ -21,8 +21,6 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     self._validate_workbook_worksheets()
     self._validate_workbook_worksheets_tables()
     self._validate_workbook_worksheets_tables_columns()   
-    raise Exception("TEST")
-
 
     self._get_ms_graph().close_session(session_config = {
       "type":"workbook",
@@ -30,6 +28,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       "persist_changes": True,
       "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
     })
+    
+
   
   def get_existing_columns_sorted_by_index(self, *args, **kwargs):    
     if hasattr(self, "_ms365_existing_columns_sorted_by_index"):
@@ -209,7 +209,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
   def _add_workbook_worksheet(self, sheet_name, sheet_key = None, *args, **kwargs):
     
-    self._get_ms_graph().send_request(
+    response = (self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
@@ -225,20 +225,20 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         },
         params={"@microsoft.graph.conflictBehavior": "replace"},
         method= "post"
-    )
+    ))
 
-    self.init_workbook_worksheet(sheet_key= sheet_key, sheet_name= sheet_name)
+    self.init_workbook_worksheet(sheet_key= sheet_key, sheet_name= sheet_name, sheet_id= response.get("id"))
   
-  def init_workbook_worksheet(self, sheet_name, sheet_key = None, *args, **kwargs):
+  def init_workbook_worksheet(self, sheet_name, sheet_key, sheet_id = None, *args, **kwargs):
 
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= sheet_id):
+      sheet_id= self._get_worksheet_data()[sheet_key].get('id') if self._get_worksheet_data().get(sheet_key) is not None else sheet_name
     
-    sheet_id= self._get_worksheet_data()[sheet_key].get('id') if self._get_worksheet_data().get(sheet_key) is not None else sheet_name
-
     return self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{sheet_id}/range(address='A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_name)))}1')"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{sheet_id}/range(address='A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_key)))}1')"),
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -246,7 +246,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
           "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
         },
         data= {
-          "values": self.get_cmdb_data_containers_columns().get(sheet_name)
+          "values": [self.get_cmdb_data_containers_columns().get(sheet_key)]
         },
         method= "patch"
     )
@@ -423,7 +423,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         self.__sync_data_add_data(sheet_key= sheet_key, insert_data= processed_data)
         continue
       
-      cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["cmdb_id"])
+      cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["cmdb_id"])
       insert_data = []
       update_data = []
       while len(processed_data) > 0:
@@ -437,27 +437,43 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
         check_row = processed_data.pop()
         existing_row = existing_data.pop(row_cmdb_id)
-        for col_key, column in self.get_cmdb_data_containers_columns_raw_byid_display().items():
+        update_data = False
+        for col_key, column in self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key].items():
           col_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(column)
           if not self._get_cmdb_data_containers_validation(
-              container= self.get_cmdb_data_containers_columns_raw()[col_key]
+              container= self.get_cmdb_data_containers_columns_raw()[sheet_key][col_key]
             )(
               existing = existing_row.get("values")[col_index],
               new = check_row[col_index]
             ):
             existing_row.get("values")[col_index] = check_row[col_index]
+            update_data = True
         
-        update_data.append(existing_row)
+        if update_data:
+          update_data.append(existing_row)
       
-      delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["delete"])
-      for item in existing_data:
-        if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item.get("values")[delete_index]):
+      delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["delete"])
+      while len(existing_data) > 0:
+        deleted_data = existing_data.pop()
+        if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= deleted_data.get("values")[delete_index]):
           continue
 
-        item.get("values")[delete_index] = self.get_common().helper_type().datetime().get()
+        deleted_data.get("values")[delete_index] = self.get_common().helper_type().datetime().get()
+        update_data.append(deleted_data)
 
-      update_data += existing_data
-        
+      # So the thought for updating efficently is as follows.
+      # Create a Filter like I do above on source and cmdb_id and the CMDB ID values are the ids from the update data.
+      # sort based on the CMDB id both the update value and the filtered data.
+
+      # The run the update. It should be in the same order and I can do it in the bulk batches.
+      # Supporting Info
+      # https://stackoverflow.com/questions/52721320/microsoft-graph-api-bulk-edit-of-noncontiguous-rows-in-excel
+      # https://learn.microsoft.com/en-us/graph/api/filter-apply?view=graph-rest-1.0&tabs=http
+      # https://learn.microsoft.com/en-us/graph/api/filter-clear?view=graph-rest-1.0&tabs=http
+      # https://learn.microsoft.com/en-us/graph/api/tablesort-apply?view=graph-rest-1.0&tabs=http
+      # https://learn.microsoft.com/en-us/graph/api/tablesort-clear?view=graph-rest-1.0&tabs=http
+
+
       
       self.__sync_data_add_data(sheet_key= sheet_key, insert_data= insert_data)
 
@@ -565,8 +581,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     if not self.__sync_data_get_existing_has_data(existing_data= existing_data):
       return {}
     
-    source_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["source"])
-    cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["cmdb_id"])
+    source_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["source"])
+    cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["cmdb_id"])
 
     return {
       self.get_common().helper_type().string().set_case(
