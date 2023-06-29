@@ -21,7 +21,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     self._validate_workbook_worksheets()
     self._validate_workbook_worksheets_tables()
     self._validate_workbook_worksheets_tables_columns()   
-    # raise Exception("TEST")
+    raise Exception("TEST")
 
 
     self._get_ms_graph().close_session(session_config = {
@@ -231,7 +231,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   
   def init_workbook_worksheet(self, sheet_name, sheet_key = None, *args, **kwargs):
 
-    sheet_id= self._get_worksheet_data()[sheet_key].get('id') if sheet_key is not None else sheet_name
+    
+    sheet_id= self._get_worksheet_data()[sheet_key].get('id') if self._get_worksheet_data().get(sheet_key) is not None else sheet_name
 
     return self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
