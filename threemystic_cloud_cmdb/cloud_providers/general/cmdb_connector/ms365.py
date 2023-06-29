@@ -4,6 +4,9 @@ from openpyxl.utils import get_column_letter
 import math
 import decimal
 
+# References
+# https://learn.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0
+# https://learn.microsoft.com/en-us/graph/query-parameters?tabs=http
 class cloud_cmdb_general_cmdb_connector_ms365(base):
   def __init__(self, *args, **kwargs):
     super().__init__(logger_name= "cloud_cmdb_general_cmdb_connector_ms365", *args, **kwargs)
@@ -18,6 +21,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     self._validate_workbook_worksheets()
     self._validate_workbook_worksheets_tables()
     self._validate_workbook_worksheets_tables_columns()   
+    # raise Exception("TEST")
 
 
     self._get_ms_graph().close_session(session_config = {
@@ -180,16 +184,16 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
     self._worksheet_data = None
     if worksheets_response.get("value") is None:
-      for sheet_name in self.get_cmdb_data_containers_key_display().values():
-        self._add_workbook_worksheet(sheet_name= sheet_name)
+      for data_container_key, data_container_display in self.get_cmdb_data_containers_key_display().items():
+        self._add_workbook_worksheet(sheet_key= data_container_key, sheet_name= data_container_display)
       return self._validate_workbook_worksheets(*args, **kwargs)
     
     if len(worksheets_response.get("value")) < 1:
-      for sheet_name in self.get_cmdb_data_containers_key_display().values():
-        self._add_workbook_worksheet(sheet_name= sheet_name)
+      for data_container_key, data_container_display in self.get_cmdb_data_containers_key_display().items():
+        self._add_workbook_worksheet(sheet_key= data_container_key, sheet_name= data_container_display)
       return self._validate_workbook_worksheets(*args, **kwargs)
     
-    self._worksheet_data = {self.get_cmdb_data_containers_display_key()[worksheet["name"]]:worksheet for worksheet in worksheets_response["value"]}
+    self._worksheet_data = {self.get_cmdb_data_containers_display_key()[worksheet["name"]]:worksheet for worksheet in worksheets_response["value"] if self.get_cmdb_data_containers_display_key().get(worksheet["name"]) is not None}
     missing_worksheets = False
     for data_container_key, data_container_display in self.get_cmdb_data_containers_key_display().items():
       if self._worksheet_data.get(data_container_key) is not None:
@@ -203,7 +207,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     
     return None
 
-  def _add_workbook_worksheet(self, sheet_key, sheet_name, *args, **kwargs):
+  def _add_workbook_worksheet(self, sheet_name, sheet_key = None, *args, **kwargs):
     
     self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
@@ -225,13 +229,15 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
     self.init_workbook_worksheet(sheet_key= sheet_key, sheet_name= sheet_name)
   
-  def init_workbook_worksheet(self, sheet_key, sheet_name, *args, **kwargs):
-    
+  def init_workbook_worksheet(self, sheet_name, sheet_key = None, *args, **kwargs):
+
+    sheet_id= self._get_worksheet_data()[sheet_key].get('id') if sheet_key is not None else sheet_name
+
     return self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/range(address='A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_name)))}1')"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{sheet_id}/range(address='A1:{get_column_letter(len(self.get_cmdb_data_containers_columns().get(sheet_name)))}1')"),
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -243,6 +249,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         },
         method= "patch"
     )
+  
   def _get_workbook_worksheets_table_columns(self, sheet_key, table_id, *args, **kwargs):
     columns = self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
@@ -411,15 +418,57 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
   def _sync_data(self, *args, **kwargs):
     for sheet_key, processed_data in self._processed_report_data.items():
       existing_data = self.__sync_data_get_existing(sheet_key= sheet_key)
-      if self.__sync_data_get_existing_has_data(existing_data= existing_data) is False:
+      if len(existing_data) < 1:
         self.__sync_data_add_data(sheet_key= sheet_key, insert_data= processed_data)
         continue
+      
+      cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["cmdb_id"])
+      insert_data = []
+      update_data = []
+      while len(processed_data) > 0:
+        row_cmdb_id = self.get_common().helper_type().string().set_case(
+          string_value= processed_data[-1][cmdb_id_index],
+          case= "lower"
+        )
+        if row_cmdb_id not in existing_data:
+          insert_data.append(processed_data.pop())
+          continue
+
+        check_row = processed_data.pop()
+        existing_row = existing_data.pop(row_cmdb_id)
+        for col_key, column in self.get_cmdb_data_containers_columns_raw_byid_display().items():
+          col_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(column)
+          if not self._get_cmdb_data_containers_validation(
+              container= self.get_cmdb_data_containers_columns_raw()[col_key]
+            )(
+              existing = existing_row.get("values")[col_index],
+              new = check_row[col_index]
+            ):
+            existing_row.get("values")[col_index] = check_row[col_index]
+        
+        update_data.append(existing_row)
+      
+      delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["delete"])
+      for item in existing_data:
+        if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item.get("values")[delete_index]):
+          continue
+
+        item.get("values")[delete_index] = self.get_common().helper_type().datetime().get()
+
+      update_data += existing_data
+        
+      
+      self.__sync_data_add_data(sheet_key= sheet_key, insert_data= insert_data)
+
       
       
   
   def __sync_data_add_data(self, sheet_key, insert_data, *args, **kwargs):
     
     data_len = len(insert_data)
+    if data_len < 1:
+      return
+    
     groups = data_len / decimal.Decimal(self._get_ms_graph().max_batch_size)
     if math.floor(groups) != groups:
       groups = int(math.floor(groups) + 1)
@@ -463,11 +512,32 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
     return True
 
   def __sync_data_get_existing(self, sheet_key, *args, **kwargs):
-    return self._get_ms_graph().send_request(
+
+    self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= self._get_ms_graph_resource(), 
         resource_id= self._get_ms_graph_resource_id(), 
-        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/rows"),
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/columns('{self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]['source']}')/filter/apply"), 
+        session_config = {
+          "type":"workbook",
+          "drive_id": self.get_cmdb_file().get('id'),
+          "persist_changes": True,
+          "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
+        },
+        data= {
+          "criteria": {
+              "filterOn": "Custom",
+              "criterion1": f"={self.get_common().helper_type().string().set_case(string_value= self.get_cloud_client().get_provider(),case= 'lower')}"
+          }
+        },
+        method= "post"
+    )
+
+    existing_data = self._get_ms_graph().send_request(
+      url = self._get_ms_graph().generate_graph_url(
+        resource= self._get_ms_graph_resource(), 
+        resource_id= self._get_ms_graph_resource_id(), 
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/range/visibleView/rows?$select=id,index,values&$skip=1"), 
         session_config = {
           "type":"workbook",
           "drive_id": self.get_cmdb_file().get('id'),
@@ -476,6 +546,40 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         },
         method= "get"
     )
+
+    self._get_ms_graph().send_request(
+      url = self._get_ms_graph().generate_graph_url(
+        resource= self._get_ms_graph_resource(), 
+        resource_id= self._get_ms_graph_resource_id(), 
+        base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/columns('{self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]['source']}')/filter/clear"), 
+        session_config = {
+          "type":"workbook",
+          "drive_id": self.get_cmdb_file().get('id'),
+          "persist_changes": True,
+          "group_id": self.get_cloud_share_config_value(config_key= self.get_cloud_share()).get('group')
+        },
+        method= "post"
+    )
+
+    if not self.__sync_data_get_existing_has_data(existing_data= existing_data):
+      return {}
+    
+    source_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["source"])
+    cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()["cmdb_id"])
+
+    return {
+      self.get_common().helper_type().string().set_case(
+        string_value= data[cmdb_id_index],
+        case= "lower"
+      ):data for data in existing_data.get("values") if self.get_common().helper_type().string().set_case(
+        string_value= data[source_index],
+        case= "lower"
+      ) == self.get_common().helper_type().string().set_case(
+        string_value= self.get_cloud_client().get_provider(),
+        case= "lower"
+      )
+    }
+
 
     
 

@@ -304,7 +304,7 @@ class cloud_cmdb_provider_base_cmdb(base):
     self._workbook_excel_data[sheet_key] = self._get_excel().create_sheet(
       title= self.get_workbook_general_data(sheet_key= sheet_key)["display"]
     )    
-      
+    
     self._workbook_excel_data[sheet_key].append(
       self.get_default_report_columns(sheet_key= sheet_key, *args, **kwargs) +
       [
@@ -429,7 +429,7 @@ class cloud_cmdb_provider_base_cmdb(base):
 
   def generate_workbook_columns_data_cmdb(self, *args, **kwargs):
     return_column_cmdb_data = {}
-
+    
     for sheet_key, item in self._load_cmdb_column_data().items():
       return_column_cmdb_data[sheet_key]= (
         self.get_default_report_columns(sheet_key= sheet_key, is_cmdb= True) +
@@ -502,10 +502,11 @@ class cloud_cmdb_provider_base_cmdb(base):
       
       return {}
 
+    return [] if not is_cmdb else {}
     # the plan is the required tags will be in the config
-    return [
-      # f'{prefix}{tag}' for tag in self.required_tag_names()
-    ]
+    # return {
+    #   # f'{prefix}{tag}' for tag in self.required_tag_names()
+    # }
   
   # def required_tag_names(cls):
   #   return {

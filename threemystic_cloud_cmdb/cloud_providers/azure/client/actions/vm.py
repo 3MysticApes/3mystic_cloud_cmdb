@@ -297,9 +297,7 @@ class cloud_cmdb_azure_client_action(base):
     return [
       public_ip.ip_address
       for public_ip in self._get_vm_public_ips(vm= vm, vm_nics= vm_nics, vm_load_balancers= vm_load_balancers)
-    ]       
-
-    return public_ips
+    ]   
     
   def _get_vm_private_ips(self, vm, vm_nics, *args, **kwargs):
 
