@@ -1,5 +1,7 @@
 from threemystic_cloud_cmdb.cloud_providers.base_class.base import cloud_cmdb_provider_base as base
 from abc import abstractmethod
+from decimal import Decimal
+from math import floor
 
 class cloud_cmdb_general_cmdb_connector_base(base):
   def __init__(self, *args, **kwargs):
@@ -28,6 +30,10 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   def _sync_data(self, *args, **kwargs):
     pass
   
+  def _get_number_of_groups_batchsize(self, total_items,  batch_size = 500, *args, **kwargs):
+    groups = total_items / Decimal(batch_size)
+    return int(floor(groups)) + 1
+
   def _get_cmdb_default_column_settings(self, *args, **kwargs):    
     if hasattr(self, "_cmdb_default_column_settings"):
       return self._cmdb_default_column_settings

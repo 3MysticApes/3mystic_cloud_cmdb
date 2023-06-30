@@ -108,6 +108,8 @@ class cloud_cmdb_provider_base_cmdb(base):
       return  
     print(f'Report saved at: {report_path}')
     self._get_excel().save(report_path)
+    self._excel_close()
+    
   
   async def save_report_cmdb(self, *args, **kwargs):    
     if not self.get_cloud_cmdb().has_cloud_share_configured():
@@ -209,12 +211,19 @@ class cloud_cmdb_provider_base_cmdb(base):
           )
           self.save_cmdb_workbook_item(sheet_key= sheet_key, account= report_data_item.get("extra_account"), report_data_item= report_data_item)
 
-  def _get_excel(self, *args, **kwargs):    
+  def _excel_close(self, *args, **kwargs):    
+    self._get_excel().close()
+    self.get_excel_workbook(unset= True)
+    self._get_excel(unset= True)
+
+  def _get_excel(self, unset = False, *args, **kwargs):    
     if hasattr(self, "_workbook_excel_main"):
+      if unset:
+        return delattr(self, "_workbook_excel_main")
       return self._workbook_excel_main
     
     from openpyxl import Workbook
-    self._workbook_excel_main = Workbook()
+    self._workbook_excel_main = Workbook(write_only=True)
     
     while len(self._workbook_excel_main.sheetnames) > 0:
       self._workbook_excel_main.remove(self._workbook_excel_main[self._workbook_excel_main.sheetnames[0]])
@@ -293,10 +302,16 @@ class cloud_cmdb_provider_base_cmdb(base):
     self.get_cmdb_workbook(sheet_key= sheet_key)[-1]["raw_data"] = report_data_item
     
 
-  def get_excel_workbook(self, sheet_key, *args, **kwargs):    
+  def get_excel_workbook(self, sheet_key = None, unset = False, *args, **kwargs):    
     if hasattr(self, "_workbook_excel_data"):
-      if self._workbook_excel_data.get(sheet_key) is not None:
+      if unset:
+        return delattr(self, "_workbook_excel_data")
+      
+      if sheet_key is not None and self._workbook_excel_data.get(sheet_key) is not None:
         return self._workbook_excel_data[sheet_key]
+      
+      if sheet_key is None:
+        return self._workbook_excel_data
     
     if not hasattr(self, "_workbook_excel_data"):
       self._workbook_excel_data = {}
