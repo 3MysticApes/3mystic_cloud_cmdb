@@ -559,15 +559,16 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         if has_update_data:
           update_data[row_cmdb_id]= existing_row
       
-      delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["deleted"])
-      while len(existing_data) > 0:
-        _, deleted_data = existing_data.popitem()
-        
-        if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= deleted_data.get("values")[0][delete_index]):
-          continue
+      if self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key].get("deleted") is not None:
+        delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["deleted"])
+        while len(existing_data) > 0:
+          _, deleted_data = existing_data.popitem()
+          
+          if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= deleted_data.get("values")[0][delete_index]):
+            continue
 
-        deleted_data.get("values")[0][delete_index] = self.get_common().helper_type().datetime().get()
-        update_data[deleted_data.get("values")[0][cmdb_id_index]] = deleted_data
+          deleted_data.get("values")[0][delete_index] = self.get_common().helper_type().datetime().get()
+          update_data[deleted_data.get("values")[0][cmdb_id_index]] = deleted_data
       
       self.__sync_data_update_data(sheet_key= sheet_key, update_data= update_data)
       self.__sync_data_add_data(sheet_key= sheet_key, insert_data= insert_data)
