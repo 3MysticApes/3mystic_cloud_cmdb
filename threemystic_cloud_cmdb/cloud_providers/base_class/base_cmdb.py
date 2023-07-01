@@ -70,32 +70,7 @@ class cloud_cmdb_provider_base_cmdb(base):
     ]
 
   def get_item_data_value(self, item_data, value_key, *args, **kwargs):
-    if self.get_common().helper_type().general().is_type(value_key, str):
-      if hasattr(item_data, value_key):
-        return getattr(item_data, value_key)
-      if value_key in item_data:
-        return item_data[value_key]
-      
-      return None
-    
-    if not self.get_common().helper_type().general().is_type(value_key, list):
-      raise self.get_common().exception().exception(
-        exception_type = "argument"
-      ).not_implemented(
-        logger = self.get_common().get_logger(),
-        name = "value_key",
-        message = f"value_key must be either a string or an array. Got Type: {type(value_key)}"
-      )
-    
-    if len(value_key) < 1:
-      return None
-    
-    while len(value_key) > 0:
-      item_data = self.get_item_data_value(item_data= item_data, value_key= value_key.pop(0), *args, **kwargs)
-      if item_data is None:
-        return item_data
-
-    return item_data
+    return self.get_common().helper_type().general().get_container_value(container= item_data, value_key= value_key)
   
   async def save_report(self, *args, **kwargs):
     report_name = f'{self.get_client_name()}-{self.get_common().helper_type().datetime().datetime_as_string(dt= self.get_data_start(), dt_format= "%Y%m%d")}.xlsx'

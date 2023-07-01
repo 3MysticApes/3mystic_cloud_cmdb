@@ -25,12 +25,12 @@ class cloud_cmdb_provider_base_client(base):
 
     self._set_data_action()
   
-  def get_default_parser_args(self, *args, **kwargs):
-    if hasattr(self, "_cmdb_default_parser_args"):
-      return self._cmdb_default_parser_args
+  def get_default_parser_action_args(self, *args, **kwargs):
+    if hasattr(self, "_cmdb_default_parser_action_args"):
+      return self._cmdb_default_parser_action_args
     
     from threemystic_cloud_data_client.cloud_providers.base_class.base_client import cloud_data_client_provider_base_client
-    self._cmdb_default_parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
+    self._cmdb_default_parser_action_args = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
         "--all, -a": {
@@ -43,11 +43,11 @@ class cloud_cmdb_provider_base_client(base):
       },      
       {
         arg_key:args
-        for arg_key, args in cloud_data_client_provider_base_client.get_default_parser_args().items()
+        for arg_key, args in cloud_data_client_provider_base_client.get_default_parser_args_actions().items()
         if args.get("const") != "vmss"
       },
     ])
-    return self.get_default_parser_args()
+    return self.get_default_parser_action_args()
 
   def __get_action_parser_options(self, *args, **kwargs):
     if hasattr(self, "_action_process_options"):
@@ -65,7 +65,7 @@ class cloud_cmdb_provider_base_client(base):
       parser_init_kwargs = self._default_parser_init,
       parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
         {},
-        self.get_default_parser_args(),
+        self.get_default_parser_action_args(),
       ])
     )
     return self._get_action_parser()
@@ -76,9 +76,9 @@ class cloud_cmdb_provider_base_client(base):
     
     return {}
   
-  def _set_action_from_arguments(self, force_action_arguments = None, *args, **kwargs):
-    if force_action_arguments is not None:
-      self._action_from_arguments = force_action_arguments
+  def _set_action_from_arguments(self, action_argument = None, *args, **kwargs):
+    if action_argument is not None:
+      self._action_from_arguments = action_argument
       return self.get_action_from_arguments()
 
     processed_info = self.__get_action_parser_options().process_opts(
@@ -124,7 +124,7 @@ class cloud_cmdb_provider_base_client(base):
           provider = self.get_provider(),
           action= arg.get("const"), 
           *args, **kwargs)
-        for arg_key, arg in self.get_default_parser_args().items() if arg.get("const") != "all"
+        for arg_key, arg in self.get_default_parser_action_args().items() if arg.get("const") != "all"
       }
       self._data_action_data["default"] = list(self._data_action_data.keys())[0]
       
@@ -170,7 +170,7 @@ class cloud_cmdb_provider_base_client(base):
   
   async def process_multiple_data_actions(self, provider, actions, *args, **kwargs):
     if actions == "all":
-      actions = [self.get_common().helper_type().string().set_case(string_value= action["const"]) for action in self.get_default_parser_args() if self.get_common().helper_type().string().set_case(string_value= action["const"])]
+      actions = [self.get_common().helper_type().string().set_case(string_value= action["const"]) for action in self.get_default_parser_action_args() if self.get_common().helper_type().string().set_case(string_value= action["const"])]
     
     running_tasks = []
     with concurrent.futures.ThreadPoolExecutor(self.get_cloud_cmdb().get_max_thread_pool()) as pool:
@@ -193,7 +193,7 @@ class cloud_cmdb_provider_base_client(base):
   
   def get_cloud_data_client(self, *args, **kwargs):
     return self._get_cloud_data_client_raw().client(
-      force_action_arguments= self.get_action_from_arguments(),
+      **self.get_action_from_arguments().get("data_action"),
       suppress_parser_help= True,
       *args, **kwargs
     )
@@ -204,9 +204,7 @@ class cloud_cmdb_provider_base_client(base):
   def __set_cloud_data_client(self, cloud_data_client, *args, **kwargs):
     self.__cloud_data_client_raw = cloud_data_client
     
-  
-  def get_cloud_client(self, data_action = None, *args, **kwargs):
-    return self.get_cloud_data_client().get_cloud_client()
+
 
   
   
