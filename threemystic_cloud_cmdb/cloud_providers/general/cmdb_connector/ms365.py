@@ -523,7 +523,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       
       cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["cmdb_id"])
       insert_data = []
-      update_data = {}
+      update_data = []
 
       while len(processed_data) > 0:
         row_cmdb_id = self.get_common().helper_type().string().set_case(
@@ -557,7 +557,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
             has_update_data = True
 
         if has_update_data:
-          update_data[row_cmdb_id]= existing_row
+          update_data.append(existing_row)
       
       if self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key].get("deleted") is not None:
         delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["deleted"])
@@ -568,19 +568,58 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
             continue
 
           deleted_data.get("values")[0][delete_index] = self.get_common().helper_type().datetime().get()
-          update_data[deleted_data.get("values")[0][cmdb_id_index]] = deleted_data
+          update_data.append(deleted_data)
       
       self.__sync_data_update_data(sheet_key= sheet_key, update_data= update_data)
       self.__sync_data_add_data(sheet_key= sheet_key, insert_data= insert_data)
 
-  def __sync_data_update_data(self, sheet_key, update_data, *args, **kwargs): 
+  def __sync_data_update_data_process(self, sheet_key, update_data, *args, **kwargs):
+    
+    return self._get_ms_graph().send_request(
+      url = self._get_ms_graph().generate_graph_url(
+        resource= "$batch",
+        resource_id= None,
+        base_path= None),
+      data = {
+        "requests": [
+          {
+            "url": (self._get_ms_graph().generate_graph_url(
+                      resource= self._get_ms_graph_resource(), 
+                      resource_id= self._get_ms_graph_resource_id(), 
+                      base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/range(address='A{group_data.get('start_index')}:{get_column_letter(len(group_data.get('data')[0]))}{group_data.get('end_index')}')?$select=id,values,columnCount")),
+            "method": "PATCH",
+            "id": f"{group_data.get('start_index')}_{group_data.get('end_index')}",
+            "body": {
+              "values" : group_data.get('data'),
+            },
+            "headers": {
+                "Content-Type": "application/json"
+            }
+          } for group_data in update_data
+        ]
+      },
+      method= "post"
+    )
+      
+
+  def __sync_data_update_data(self, sheet_key, update_data, *args, **kwargs):
     
     if len(update_data) < 1:
       return
-    update_data_sorted = sorted(list(update_data.values()), key= lambda ceil: ceil.get("index"))
+    
+    self.__close_session()
+    update_data.sort(key=lambda ceil: ceil.get("index"))
     update_data_parsed = []
+    
+    batch_size = 15
+    batch_count = 1
+    # JSON batch requests are currently limited to 20 individual requests in addition to the following limitations:
+    # https://learn.microsoft.com/en-us/graph/json-batching#batch-size-limitations
+    while len(update_data) > 0:
+      if batch_count >= 2000:
+        sleep(5)
 
-    for row in update_data_sorted:
+      row = update_data.pop()
       if len(update_data_parsed) < 1 or ((update_data_parsed[-1]["end_index"] + 1) != row.get("index")):
         update_data_parsed.append({
           "start_index": row.get("index"),
@@ -592,57 +631,30 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       update_data_parsed[-1]["end_index"] += 1
       update_data_parsed[-1]["data"].append(row.get("values")[0])
 
-    data_len = len(update_data_parsed)
-    
-    batch_size = self._get_ms_graph().max_batch_size
-    groups = self._get_number_of_groups_batchsize(total_items= data_len, batch_size= batch_size)
-      
-
-    
-    if groups > 20:
-      batch_size = data_len / Decimal(20)
-      batch_size = int(floor(batch_size)) + 1
-      groups = self._get_number_of_groups_batchsize(total_items= data_len, batch_size= batch_size)
-
-    return_results = []
-    try:
-      for iteration in range(int(groups)):
-        start_index = iteration * batch_size
-        end_index = start_index + batch_size
-
-        return_results.append(
-          self._get_ms_graph().send_request(
-            url = self._get_ms_graph().generate_graph_url(
-              resource= "$batch",
-              resource_id= None,
-              base_path= None),
-            data = {
-              "requests": [
-                {
-                  "url": self._get_ms_graph().generate_graph_url(
-                    resource= self._get_ms_graph_resource(), 
-                    resource_id= self._get_ms_graph_resource_id(), 
-                    base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/range(address='A{group_data.get('start_index')}={get_column_letter(len(group_data.get('data')[0]))}{group_data.get('end_index')}')"),
-                  "method": "PATCH",
-                  "id": f"{iteration}_{group_data.get('start_index')}_{group_data.get('end_index')}",
-                  "body": {
-                    "values" : group_data.get('data'),
-                  },
-                  "headers": {
-                      "Content-Type": "application/json"
-                  }
-                } for group_data in update_data_parsed[start_index:(end_index if end_index < data_len else None)]
-              ]
-            },
-            method= "post"
+      if len(update_data_parsed) >= batch_size:
+        try:
+          self.__sync_data_update_data_process(
+            sheet_key= sheet_key,
+            update_data= update_data_parsed,
           )
-        )
-
-    except Exception as err:
-      self.__close_session()
-      raise err
+          update_data_parsed.clear()
+          batch_count += 1
+        except:
+          pass
     
-    return return_results
+    if len(update_data_parsed) > 0:
+      try:
+        self.__sync_data_update_data_process(
+          sheet_key= sheet_key,
+          update_data= update_data_parsed,
+        )
+        update_data_parsed.clear()
+        batch_count += 1
+      except:
+        pass
+
+      
+    
   
   
   def __sync_data_add_data(self, sheet_key, insert_data, *args, **kwargs):
@@ -656,8 +668,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       
 
     
-    if groups > 20:
-      batch_size = data_len / Decimal(20)
+    if groups > 100:
+      batch_size = data_len / Decimal(100)
       batch_size = int(floor(batch_size)) + 1
       groups = self._get_number_of_groups_batchsize(total_items= data_len, batch_size= batch_size)
 
