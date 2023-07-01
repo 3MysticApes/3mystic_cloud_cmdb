@@ -8,11 +8,11 @@ Currently supports AWS/Azure
 
 This project is currently designed to be installed via pip
 Currently the project is under development and is not in PyPI. 
-So you need to install the following packages
-pip install https://github.com/3MysticApes/3mystic_common
-pip install https://github.com/3MysticApes/3mystic_cloud_client
-pip install https://github.com/3MysticApes/3mystic_cloud_data_client
-pip install https://github.com/3MysticApes/3mystic_cloud_cmdb
+So you need to install the following packages <br/>
+pip install https://github.com/3MysticApes/3mystic_common <br/>
+pip install https://github.com/3MysticApes/3mystic_cloud_client <br/>
+pip install https://github.com/3MysticApes/3mystic_cloud_data_client <br/>
+pip install https://github.com/3MysticApes/3mystic_cloud_cmdb <br/>
 
 Once installed you will get the following command:
 3mystic_cloud_cmdb
