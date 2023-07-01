@@ -536,7 +536,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
         check_row = processed_data.pop()
         existing_row = existing_data.pop(row_cmdb_id)
-        
+
         has_update_data = False
         for col_key, column in self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key].items():
           col_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(column)
@@ -574,8 +574,8 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       self.__sync_data_add_data(sheet_key= sheet_key, insert_data= insert_data)
 
   def __sync_data_update_data_process(self, sheet_key, update_data, *args, **kwargs):
-    
-    return self._get_ms_graph().send_request(
+
+    return (self._get_ms_graph().send_request(
       url = self._get_ms_graph().generate_graph_url(
         resource= "$batch",
         resource_id= None,
@@ -599,7 +599,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         ]
       },
       method= "post"
-    )
+    ))
       
 
   def __sync_data_update_data(self, sheet_key, update_data, *args, **kwargs):
@@ -619,11 +619,13 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
       if batch_count >= 2000:
         sleep(5)
 
-      row = update_data.pop()
-      if len(update_data_parsed) < 1 or ((update_data_parsed[-1]["end_index"] + 1) != row.get("index")):
+      row = update_data.pop(0)
+      index_row_offset = 2
+
+      if len(update_data_parsed) < 1 or ((update_data_parsed[-1]["end_index"] + 1) != (row.get("index") + index_row_offset)):
         update_data_parsed.append({
-          "start_index": row.get("index"),
-          "end_index": row.get("index"),
+          "start_index": row.get("index") + index_row_offset,
+          "end_index": row.get("index") + index_row_offset,
           "data": row.get("values")
         })
         continue
@@ -725,7 +727,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         url = self._get_ms_graph().generate_graph_url(
           resource= self._get_ms_graph_resource(), 
           resource_id= self._get_ms_graph_resource_id(), 
-          base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/rows?$skip=1"),
+          base_path= f"drive/{self._get_ms_graph_base_path(drive_item_id= self.get_cmdb_file().get('id') )}/workbook/worksheets/{self._get_worksheet_data()[sheet_key].get('id')}/tables/{self._get_worksheet_table_data()[sheet_key].get('id')}/rows"),
         session_config = {
           "type":"workbook",
           "graph_resource": self._get_ms_graph_resource(),
