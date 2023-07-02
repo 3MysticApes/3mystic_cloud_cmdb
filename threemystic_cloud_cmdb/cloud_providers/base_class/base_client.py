@@ -193,9 +193,8 @@ class cloud_cmdb_provider_base_client(base):
   
   def get_cloud_data_client(self, *args, **kwargs):
     return self._get_cloud_data_client_raw().client(
-      **self.get_action_from_arguments().get("data_action"),
       suppress_parser_help= True,
-      *args, **kwargs
+      *args, **self.get_action_from_arguments(), **kwargs
     )
   
   def _get_cloud_data_client_raw(self, *args, **kwargs):

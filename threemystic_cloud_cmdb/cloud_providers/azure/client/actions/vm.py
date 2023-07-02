@@ -19,10 +19,10 @@ class cloud_cmdb_azure_client_action(base):
     
     self._cmdb_general_data_loaded = {
       "vmss":{
-        "display":"ASG",
+        "display":"VMSS_ASG",
       },
       self.get_cmdb_data_action():{
-        "display":"LongLived",
+        "display":"VM_LongLived",
       }
     }
     return self._load_cmdb_general_data()
@@ -41,7 +41,7 @@ class cloud_cmdb_azure_client_action(base):
           "display": "ID",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id"),
           "cmdb": {
-            "display": "ASG Arn"
+            "display": "ID_Arn"
           }
         },
         "ASGName": {
@@ -87,7 +87,7 @@ class cloud_cmdb_azure_client_action(base):
       },
       self.get_cmdb_data_action(): {
         "EC2":{
-          "display": "EC2",
+          "display": "Type",
           "handler": lambda item: "VM"
         },
         "InstanceID":{
