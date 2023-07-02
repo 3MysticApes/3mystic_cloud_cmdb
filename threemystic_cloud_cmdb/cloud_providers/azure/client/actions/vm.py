@@ -70,7 +70,10 @@ class cloud_cmdb_azure_client_action(base):
         },
         "AMIID": {
           "display": "AMI ID",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])]) 
+          "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"]) 
+                                   if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"])) else 
+                                   self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])])
+          )
         },
         "AMIName": {
           "display": "AMI Name",

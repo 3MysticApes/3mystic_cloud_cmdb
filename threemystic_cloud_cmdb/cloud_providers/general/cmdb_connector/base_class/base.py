@@ -30,6 +30,12 @@ class cloud_cmdb_general_cmdb_connector_base(base):
   def _sync_data(self, *args, **kwargs):
     pass
   
+  def _get_delete_time(self, *args, **kwargs):
+    if hasattr(self, "_general_delete_time"):
+      return self._general_delete_time
+    
+    self._general_delete_time = self.get_common().helper_type().datetime().get()
+    return self._get_delete_time()
   def _get_number_of_groups_batchsize(self, total_items,  batch_size = 500, *args, **kwargs):
     groups = total_items / Decimal(batch_size)
     return int(floor(groups)) + 1

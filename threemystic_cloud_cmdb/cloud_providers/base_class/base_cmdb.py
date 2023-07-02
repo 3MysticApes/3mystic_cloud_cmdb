@@ -1,6 +1,7 @@
 from threemystic_common.base_class.base_provider import base
 import asyncio, concurrent.futures
 from abc import abstractmethod
+from openpyxl import Workbook,worksheet
 
 class cloud_cmdb_provider_base_cmdb(base):
   def __init__(self, *args, **kwargs):
@@ -72,18 +73,31 @@ class cloud_cmdb_provider_base_cmdb(base):
   def get_item_data_value(self, item_data, value_key, *args, **kwargs):
     return self.get_common().helper_type().general().get_container_value(container= item_data, value_key= value_key)
   
-  async def save_report(self, *args, **kwargs):
+  def save_excel_report_path(self, *args, **kwargs):
+    if hasattr(self, "_excel_report_path_save" ):
+      return self._excel_report_path_save
+
     report_name = f'{self.get_client_name()}-{self.get_common().helper_type().datetime().datetime_as_string(dt= self.get_data_start(), dt_format= "%Y%m%d")}.xlsx'
-    report_path = self.get_cloud_cmdb().get_cmdb_report_path().joinpath(f'{self._get_cloud_cmdb_raw().get_provider()}/{report_name}')
-    if not report_path.parent.exists():
-      report_path.parent.mkdir(parents= True)
+    self._excel_report_path_save = self.get_cloud_cmdb().get_cmdb_report_path().joinpath(f'{self._get_cloud_cmdb_raw().get_provider()}/{report_name}')
+    if not self._excel_report_path_save.parent.exists():
+      self._excel_report_path_save.parent.mkdir(parents= True)
+    
+    return self.save_excel_report_path()
+  
+  async def save_excel_report_only(self, close_connection = False, *args, **kwargs):
+    self._get_excel().save(self._excel_report_path_save)
+    
+    if close_connection is True:
+      self._excel_close()
+
+  async def save_report(self, *args, **kwargs):
+    
     
     if len(self._get_excel().sheetnames) < 1:
       print(f'No Report Saved - No Data')
       return  
-    print(f'Report saved at: {report_path}')
-    self._get_excel().save(report_path)
-    self._excel_close()
+    print(f'Report saved at: {self.save_excel_report_path()}')
+    await self.save_excel_report_only(close_connection= True)
     
   
   async def save_report_cmdb(self, *args, **kwargs):    
@@ -162,13 +176,15 @@ class cloud_cmdb_provider_base_cmdb(base):
     )
 
   async def _process_report_data(self, data, *args, **kwargs):
-    report_data = {}
+    
+    save_task = None
     for sheet_key, main_report_data in data.items():
       for _, report_data in main_report_data.items():
         if report_data is None:
           continue
         
-        for report_data_item in report_data:
+        while len(report_data) > 0:
+          report_data_item=report_data.pop(0)
           self.get_excel_workbook(sheet_key= sheet_key).append(
             self.get_report_default_row(
               sheet_key= sheet_key,
@@ -180,11 +196,21 @@ class cloud_cmdb_provider_base_cmdb(base):
               ) +
             [self.get_handler_column_data(column_data= column_data, is_cmdb= False)(report_data_item) for _, column_data in self.get_workbook_columns()[sheet_key].items()] +
             self.generate_tag_columns(
-              account=report_data_item.get("extra_account"), 
+              account=report_data_item.get("extra_account"),
               resource= report_data_item,
               is_cmdb= False)
           )
           self.save_cmdb_workbook_item(sheet_key= sheet_key, account= report_data_item.get("extra_account"), report_data_item= report_data_item)
+          
+          report_data_len = len(report_data)
+          if ( report_data_len % 1000) == 0 and report_data_len > 0:
+            if save_task is not None:
+              await asyncio.wait([save_task])
+
+            save_task = asyncio.get_event_loop().create_task(self.save_excel_report_only(close_connection= False))
+    
+    if save_task is not None:
+      await asyncio.wait([save_task])
 
   def _excel_close(self, *args, **kwargs):    
     self._get_excel().close()
@@ -197,7 +223,6 @@ class cloud_cmdb_provider_base_cmdb(base):
         return delattr(self, "_workbook_excel_main")
       return self._workbook_excel_main
     
-    from openpyxl import Workbook
     self._workbook_excel_main = Workbook(write_only=True)
     
     while len(self._workbook_excel_main.sheetnames) > 0:

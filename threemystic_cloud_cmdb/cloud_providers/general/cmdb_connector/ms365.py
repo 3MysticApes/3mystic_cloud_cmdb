@@ -567,7 +567,7 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
           if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= deleted_data.get("values")[0][delete_index]):
             continue
 
-          deleted_data.get("values")[0][delete_index] = self.get_common().helper_type().datetime().get()
+          deleted_data.get("values")[0][delete_index] = self._get_delete_time()
           update_data.append(deleted_data)
       
       self.__sync_data_update_data(sheet_key= sheet_key, update_data= update_data)

@@ -40,11 +40,17 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Size":{
           "display": "Size_Gib",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["diskSizeGB"])
+          "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["diskSizeGB"])
+                                   if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["diskSizeGB"])) else
+                                   self.get_item_data_value(item_data= item, value_key=["properties", "diskSizeGB"])
+          )
         },
         "Attached":{
           "display": "Attached",
-          "handler": lambda item:  self.get_item_data_value(item_data= item, value_key=["diskState"])
+          "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["diskState"])
+                                   if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["diskState"])) else
+                                   self.get_item_data_value(item_data= item, value_key=["properties", "diskState"])
+          )
         },
         "GroupType":{
           "display": "GroupType",

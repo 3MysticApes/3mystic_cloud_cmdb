@@ -37,6 +37,13 @@ class cloud_cmdb_azure_client_action(base):
     
     self._cmdb_column_data_loaded = {
       self.get_cmdb_data_action(): {
+        "last_run":{
+          "display": "LastRun",
+          "handler": lambda item: self.get_common().helper_type().datetime().remove_tzinfo(dt= self.get_data_start()),
+          "cmdb": {
+              "handler": lambda item: self.get_data_start(),
+          }
+        },
         "last_seven_days":{
           "display": "Last7Days",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key="last_seven_days")
