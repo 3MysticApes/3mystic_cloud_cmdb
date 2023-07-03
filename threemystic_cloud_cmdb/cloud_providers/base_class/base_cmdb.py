@@ -99,12 +99,13 @@ class cloud_cmdb_provider_base_cmdb(base):
         )
     
     self._saving_excel_report_data = True
-    self._get_excel().save(self._excel_report_path_save)
-    
+
+    # When in write mode you can only save onces
+    self._get_excel().save(self.save_excel_report_path())
+    self._saving_excel_report_data = False
+
     if close_connection is True:
       self._excel_close()
-    
-    self._saving_excel_report_data = False
 
   async def save_report(self, *args, **kwargs):
     
@@ -197,14 +198,13 @@ class cloud_cmdb_provider_base_cmdb(base):
             "send_account_data_lambda": {
               "handler": self._process_report_data,
               "sheet_key": sheet_key
-            }
+            },
           },
           pool= pool,
           loop= loop)
 
   async def _process_report_data(self, data, *args, **kwargs):
     
-    save_task = None
     for sheet_key, main_report_data in data.items():
       for _, report_data in main_report_data.items():
         if report_data is None:
@@ -228,10 +228,7 @@ class cloud_cmdb_provider_base_cmdb(base):
               is_cmdb= False)
           )
           self.save_cmdb_workbook_item(sheet_key= sheet_key, account= report_data_item.get("extra_account"), report_data_item= report_data_item)
-          
-          report_data_len = len(report_data)
-          if ( report_data_len % 1000) == 0 and report_data_len > 0:
-            await self.save_excel_report_only(close_connection= False)
+
 
       
 
