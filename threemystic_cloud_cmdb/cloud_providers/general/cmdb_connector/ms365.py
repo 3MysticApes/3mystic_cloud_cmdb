@@ -522,6 +522,10 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
         continue
       
       cmdb_id_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["cmdb_id"])
+      delete_index= -1
+      if self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key].get("deleted") is not None:
+        delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["deleted"])
+
       insert_data = []
       update_data = []
 
@@ -555,12 +559,16 @@ class cloud_cmdb_general_cmdb_connector_ms365(base):
 
             existing_row.get("values")[0][col_index] = check_row[col_index]
             has_update_data = True
-
+        
+        if delete_index > -1:
+          if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= existing_row.get("values")[0][delete_index]):
+            existing_row.get("values")[0][delete_index] = None
+            has_update_data = True
+            
         if has_update_data:
           update_data.append(existing_row)
       
-      if self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key].get("deleted") is not None:
-        delete_index = self.get_existing_columns_sorted_by_index()[sheet_key].index(self.get_cmdb_data_containers_columns_raw_byid_display()[sheet_key]["deleted"])
+      if delete_index > -1:
         while len(existing_data) > 0:
           _, deleted_data = existing_data.popitem()
           

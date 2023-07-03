@@ -2,6 +2,7 @@ from threemystic_common.base_class.base_provider import base
 import asyncio, concurrent.futures
 from abc import abstractmethod
 from openpyxl import Workbook,worksheet
+from polling2 import TimeoutException, poll as poll2
 
 class cloud_cmdb_provider_base_cmdb(base):
   def __init__(self, *args, **kwargs):
@@ -85,10 +86,25 @@ class cloud_cmdb_provider_base_cmdb(base):
     return self.save_excel_report_path()
   
   async def save_excel_report_only(self, close_connection = False, *args, **kwargs):
+    if hasattr(self, "_saving_excel_report_data"):
+      if self._saving_excel_report_data is True and not close_connection:
+        return
+      
+      if self._saving_excel_report_data is True and not close_connection:
+        poll2(
+          lambda: self._saving_excel_report_data,
+          ignore_exceptions=(Exception,),
+          timeout= 240,
+          step=0.1
+        )
+    
+    self._saving_excel_report_data = True
     self._get_excel().save(self._excel_report_path_save)
     
     if close_connection is True:
       self._excel_close()
+    
+    self._saving_excel_report_data = False
 
   async def save_report(self, *args, **kwargs):
     
