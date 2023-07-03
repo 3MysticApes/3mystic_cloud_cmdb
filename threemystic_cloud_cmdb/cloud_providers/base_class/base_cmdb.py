@@ -3,6 +3,7 @@ import asyncio, concurrent.futures
 from abc import abstractmethod
 from openpyxl import Workbook,worksheet
 from polling2 import TimeoutException, poll as poll2
+from random import Random
 
 class cloud_cmdb_provider_base_cmdb(base):
   def __init__(self, *args, **kwargs):
@@ -107,6 +108,20 @@ class cloud_cmdb_provider_base_cmdb(base):
     if close_connection is True:
       self._excel_close()
 
+  async def _stop_is_processing_sheet_data_or_set_processing(self, sheet_key, *args, **kwargs):
+    self._is_processing_sheet_data.get[sheet_key] = False
+
+  async def _is_processing_sheet_data_or_set_processing(self, sheet_key, *args, **kwargs):
+    if hasattr(self, "_is_processing_sheet_data"):
+      if self._is_processing_sheet_data.get(sheet_key) is True:
+        return True
+      
+      self._is_processing_sheet_data.get[sheet_key] = True
+      return False
+      
+    self._is_processing_sheet_data = {}
+    return self._is_processing_sheet_data_or_set_processing(sheet_key= sheet_key)
+
   async def save_report(self, *args, **kwargs):
     
     
@@ -206,6 +221,8 @@ class cloud_cmdb_provider_base_cmdb(base):
   async def _process_report_data(self, data, *args, **kwargs):
     
     for sheet_key, main_report_data in data.items():
+      while await self._is_processing_sheet_data_or_set_processing(sheet_key= sheet_key):
+        await asyncio.sleep(Random().random()*2)
       for _, report_data in main_report_data.items():
         if report_data is None:
           continue
@@ -228,6 +245,8 @@ class cloud_cmdb_provider_base_cmdb(base):
               is_cmdb= False)
           )
           self.save_cmdb_workbook_item(sheet_key= sheet_key, account= report_data_item.get("extra_account"), report_data_item= report_data_item)
+      
+      self._stop_is_processing_sheet_data_or_set_processing(sheet_key= sheet_key)
 
 
       
