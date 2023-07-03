@@ -169,11 +169,22 @@ class cloud_cmdb_provider_base_cmdb(base):
     }
   
   async def _generate_report_data(self, pool, loop= None, *args, **kwargs):  
-    await self._process_report_data(
-      data= {
-        sheet_key: await data.main(pool= pool, loop= loop) for sheet_key, data in self._get_data_action_by_key().items()
-      }
-    )
+    
+    # await self._process_report_data(
+    #   data= {
+    #     sheet_key: await data.main(pool= pool, loop= loop,) for sheet_key, data in self._get_data_action_by_key().items()
+    #   }
+    # )
+    for sheet_key, data in self._get_data_action_by_key().items():
+      await data.main(
+          run_params = {
+            "send_account_data_lambda": {
+              "handler": self._process_report_data,
+              "sheet_key": sheet_key
+            }
+          },
+          pool= pool,
+          loop= loop)
 
   async def _process_report_data(self, data, *args, **kwargs):
     
@@ -204,13 +215,9 @@ class cloud_cmdb_provider_base_cmdb(base):
           
           report_data_len = len(report_data)
           if ( report_data_len % 1000) == 0 and report_data_len > 0:
-            if save_task is not None:
-              await asyncio.wait([save_task])
+            await self.save_excel_report_only(close_connection= False)
 
-            save_task = asyncio.get_event_loop().create_task(self.save_excel_report_only(close_connection= False))
-    
-    if save_task is not None:
-      await asyncio.wait([save_task])
+      
 
   def _excel_close(self, *args, **kwargs):    
     self._get_excel().close()
