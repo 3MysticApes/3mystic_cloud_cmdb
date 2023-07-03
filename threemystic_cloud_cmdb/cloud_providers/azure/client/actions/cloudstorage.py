@@ -1,6 +1,7 @@
 from threemystic_cloud_cmdb.cloud_providers.azure.client.actions.base_class.base import cloud_cmdb_azure_client_action_base as base
 import asyncio
 from azure.mgmt.storage import StorageManagementClient
+from decimal import Decimal, ROUND_HALF_UP
 
 class cloud_cmdb_azure_client_action(base):
   def __init__(self, *args, **kwargs):
@@ -41,7 +42,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "AvgSizeLast24HR_Bytes":{
           "display": "AvgSizeLast24HR_Bytes",
-          "handler": lambda item:  None
+          "handler": lambda item:  self.get_item_data_value(item_data= item, value_key=["extra_storageaccount_bytes_24hours"])
         },
         "SampleObjectClass":{
           "display": "SampleObjectClass",
