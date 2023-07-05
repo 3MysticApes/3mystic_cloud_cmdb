@@ -65,7 +65,7 @@ class cloud_cmdb_provider_base(base):
 
     
   def is_provider_config_completed_only(self, *args, **kwargs):
-    return self.get_config().get("_config_process") is True 
+    return self.get_config().get("_config_process") is True
 
   def is_provider_config_completed(self, *args, **kwargs):
     return self.is_provider_config_completed_only() and self.is_data_client_config_completed()
