@@ -6,4 +6,4 @@ class cloud_cmdb_aws_config_base(base):
     super().__init__(*args, **kwargs)
 
   def step(self, *args, **kwargs):
-    return True
+    return self.ensure_data_client_config_completed()

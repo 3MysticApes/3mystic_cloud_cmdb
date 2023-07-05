@@ -3,7 +3,7 @@ from threemystic_common.base_class.generate_data.generate_data_handlers import g
 
 
 
-class cloud_cmdb_general_config_step_2(base):
+class cloud_cmdb_general_config_step_3(base):
   def __init__(self, *args, **kwargs):
     super().__init__(logger_name= "cloud_cmdb_general_config_step_1", *args, **kwargs)
     
@@ -38,7 +38,9 @@ class cloud_cmdb_general_config_step_2(base):
     if not super().step(run_base_config= True):
       return
     
-    
+    #Not Implemented
+    self.update_general_config_completed(status= True)
+    return
     print("-----------------------------")
     print()
     print()
@@ -116,6 +118,7 @@ class cloud_cmdb_general_config_step_2(base):
       from threemystic_cloud_cmdb.cloud_providers.general.config.step_2_cloud_share import cloud_cmdb_general_config_step_2_cloud_share as step
       next_step = step(common= self.get_common(), logger= self.get_logger())
       
+      self.update_general_config_completed(status= "step3")
       next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "cloud_share_location"))
 
       print("-----------------------------")

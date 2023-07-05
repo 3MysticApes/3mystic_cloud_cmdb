@@ -1,10 +1,74 @@
 from threemystic_common.base_class.base_provider import base
+from threemystic_cloud_cmdb.cli import cloud_cmdb_cli
+from threemystic_common.base_class.generate_data.generate_data_handlers import generate_data_handlers
+from threemystic_cloud_data_client.cloud_providers.base_class.base import cloud_data_client_provider_base as main_cloud_data_client
 
 class cloud_cmdb_provider_base(base):
   def __init__(self, *args, **kwargs):
     if "provider" not in kwargs:
       kwargs["provider"] = self.get_default_provider()
     super().__init__(*args, **kwargs)
+    
+  def _setup_another_config(self):
+    response = self.get_common().generate_data().generate(
+      generate_data_config = {
+        "repeat_config": {
+            "validation": lambda item: self.get_common().helper_type().bool().is_bool(check_value= item),
+            "messages":{
+              "validation": f"Valid options for Yes are: {self.get_common().helper_type().bool().is_true_values()}",
+            },
+            "conversion": lambda item: self.get_common().helper_type().bool().is_true(check_value= item),
+            "desc": f"Do you want to setup another provider?: {self.get_common().helper_type().bool().is_true_values()}",
+            "default": None,
+            "handler": generate_data_handlers.get_handler(handler= "base"),
+            "optional": True
+        }
+      }
+    )
+
+    if response is None:
+      return
+    
+    if response.get("repeat_config") is None:
+      return
+    
+    if response.get("repeat_config").get("formated") is not True:
+      return
+    
+    print()
+    print()
+    print("-------------------------------------------------------------------------")
+    print()
+    print()
+
+    cloud_cmdb_cli().process_client_action("config")
+  
+  def update_general_config_completed(self, status, *args, **kwargs):
+    self.get_config()["_config_process"] = status
+    self._save_config()
+  
+  def is_data_client_config_completed(self, *args, **kwargs):
+    cloud_client = main_cloud_data_client( common= self.get_common(), logger_name= "cmdb_init", logger= self.get_common().get_logger())
+    
+    return cloud_client.is_provider_config_completed()
+
+  
+  def ensure_data_client_config_completed(self, *args, **kwargs):
+    if self.is_data_client_config_completed():
+      return True
+    
+    print("Data Client needs to be configured")
+    cloud_client = main_cloud_data_client( common= self.get_common(), logger_name= "cmdb_init", logger= self.get_common().get_logger())
+    cloud_client._setup_another_config(force_config= True)
+    
+    return False
+
+    
+  def is_provider_config_completed_only(self, *args, **kwargs):
+    return self.get_config().get("_config_process") is True 
+
+  def is_provider_config_completed(self, *args, **kwargs):
+    return self.is_provider_config_completed_only() and self.is_data_client_config_completed()
     
   
   def get_main_directory_name(self, *args, **kwargs):
@@ -87,8 +151,8 @@ class cloud_cmdb_provider_base(base):
     self._config_data = self.__load_config()    
     return self.get_config(*args, **kwargs)
 
-  def _update_config(self,config_key, config_value,  *args, **kwargs):
-     self.get_config(refresh = True)[config_key] = config_value
+  def _update_config(self,config_key, config_value, refresh= False,  *args, **kwargs):
+     self.get_config(refresh = refresh)[config_key] = config_value
      
   def _save_config(self, *args, **kwargs):
      if not self.config_path().parent.exists():

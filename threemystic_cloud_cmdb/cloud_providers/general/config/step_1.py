@@ -50,6 +50,12 @@ class cloud_cmdb_general_config_step_1(base):
       print()
       print()
       print("-----------------------------")
+      from threemystic_cloud_cmdb.cloud_providers.general.config.step_2 import cloud_cmdb_general_config_step_2 as step
+      next_step = step(common= self.get_common(), logger= self.get_logger())
+      
+      if not self.is_provider_config_completed_only():
+        self.update_general_config_completed(status= "step1")
+      next_step.step()
     else:
       print("-----------------------------")
       print()
@@ -60,10 +66,7 @@ class cloud_cmdb_general_config_step_1(base):
       print("-----------------------------")    
     
     
-    from threemystic_cloud_cmdb.cloud_providers.general.config.step_2 import cloud_cmdb_general_config_step_2 as step
-    next_step = step(common= self.get_common(), logger= self.get_logger())
     
-    next_step.step()
 
     
     

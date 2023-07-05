@@ -40,7 +40,14 @@ class cloud_cmdb_general_config_step_2(base):
       return
 
     if not self.get_common().helper_type().bool().is_true(check_value= response.get("cmdb_cloud_share").get("formated")):
+      from threemystic_cloud_cmdb.cloud_providers.general.config.step_3 import cloud_cmdb_general_config_step_3 as step
+      next_step = step(common= self.get_common(), logger= self.get_logger())
+      
+      if not self.is_provider_config_completed_only():
+        self.update_general_config_completed(status= "step2")
+
       if len(self.get_config_cloud_share()) < 1:
+        next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
         return
       
       response = self.get_common().generate_data().generate(
@@ -59,11 +66,12 @@ class cloud_cmdb_general_config_step_2(base):
         }
       )
       if response is None:
-        return
+        next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
 
       if self.get_common().helper_type().bool().is_true(check_value= response.get("reset_cloud_share").get("formated")):
         self.reset_config_cloud_share()
       
+      next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
       return
 
     response = self.get_common().generate_data().generate(
@@ -106,10 +114,13 @@ class cloud_cmdb_general_config_step_2(base):
         self._update_config_cloud_share(config_key= response.get("type").get("formated"), config_value= {})
       self._save_config_cloud_share()
       
-
+      
       from threemystic_cloud_cmdb.cloud_providers.general.config.step_2_cloud_share import cloud_cmdb_general_config_step_2_cloud_share as step
       next_step = step(common= self.get_common(), logger= self.get_logger())
       
+      if not self.is_provider_config_completed_only():
+        self.update_general_config_completed(status= "step2")
+        
       next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
 
       print("-----------------------------")
