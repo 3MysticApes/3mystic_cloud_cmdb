@@ -17,7 +17,7 @@ class cloud_cmdb_azure_client_action(base):
     
     self._cmdb_general_data_loaded = {
       self.get_cmdb_data_action():{
-        "display":"BlobStorage",
+        "display":"CloudStorage",
       }
     }
     return self._load_cmdb_general_data()
