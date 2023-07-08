@@ -50,7 +50,7 @@ class cloud_cmdb_provider_base(base):
   def is_data_client_config_completed(self, *args, **kwargs):
     cloud_client = main_cloud_data_client( common= self.get_common(), logger_name= "cmdb_init", logger= self.get_common().get_logger())
     
-    return cloud_client.is_provider_config_completed()
+    return cloud_client.is_general_config_completed()
 
   
   def ensure_data_client_config_completed(self, *args, **kwargs):
@@ -64,11 +64,11 @@ class cloud_cmdb_provider_base(base):
     return False
 
     
-  def is_provider_config_completed_only(self, *args, **kwargs):
+  def is_general_config_completed_only(self, *args, **kwargs):
     return self.get_config().get("_config_process") is True
 
-  def is_provider_config_completed(self, *args, **kwargs):
-    return self.is_provider_config_completed_only() and self.is_data_client_config_completed()
+  def is_general_config_completed(self, *args, **kwargs):
+    return self.is_general_config_completed_only() and self.is_data_client_config_completed()
     
   
   def get_main_directory_name(self, *args, **kwargs):
@@ -105,6 +105,39 @@ class cloud_cmdb_provider_base(base):
   
   def config_path(self, *args, **kwargs):
     return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/config")
+  
+  def reset_config_tag_data(self, *args, **kwargs):    
+    self.get_config()["tag_data"] = {}
+    self._save_config()
+
+  def has_tag_data_config(self, refresh = False, *args, **kwargs):
+    
+    if len(self.get_config_tag_data(refresh= refresh)) < 1:
+      return False
+
+    return True
+
+  def get_config_tag_data(self, refresh = False, *args, **kwargs):
+    if self.get_config(refresh= refresh).get("tag_data") is not None:
+      return self.get_config().get("tag_data")
+    
+    self.get_config()["tag_data"] = {}
+    self._save_config()
+     
+    return self.get_config_tag_data(*args, **kwargs)
+
+  def _update_config_tag_data(self,config_key, config_value, refresh = False,  *args, **kwargs):
+     self.get_config_cloud_share(refresh = refresh)[config_key] = config_value
+     
+  def _save_config_tag_data(self, *args, **kwargs):
+     self._save_config()
+  
+  def get_tag_data_config_value(self, config_key, default_if_none = None, refresh = False, *args, **kwargs):
+    config_value = self.get_config_tag_data(refresh= refresh).get(config_key)
+    if config_value is not None:
+      return config_value
+    
+    return default_if_none
   
   def reset_config_cloud_share(self, *args, **kwargs):    
     self.get_config()["cloud_share"] = {}

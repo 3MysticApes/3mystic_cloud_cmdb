@@ -453,7 +453,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
     from threemystic_cloud_cmdb.cloud_providers.general.config.step_3 import cloud_cmdb_general_config_step_3 as step
     next_step = step(common= self.get_common(), logger= self.get_logger())
     
-    if not self.is_provider_config_completed_only():
+    if not self.is_general_config_completed_only():
       self.update_general_config_completed(status= "CloudShare")
 
     next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
