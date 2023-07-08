@@ -190,14 +190,18 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
   
 
   
-  def get_drive_item_index(self, drive_item_ids, drive_item_id_options, position, cloud_share):
+  def get_drive_item_index(self, drive_item_ids, existing_drive_item_ids, drive_item_id_options, position, cloud_share):
     try:
       index = 0
       drive_id = None
       drive_item_ids_position = position + 1
-      if len(drive_item_ids) > drive_item_ids_position:
-        if self.get_common().helper_type().general().is_type(obj= drive_item_ids[drive_item_ids_position], type_check= dict):
-          drive_id = drive_item_ids[drive_item_ids_position]
+      if drive_item_ids[-1]["id"] != existing_drive_item_ids[position]["id"]:
+        return None
+      
+      
+      if len(existing_drive_item_ids) > drive_item_ids_position:
+        if self.get_common().helper_type().general().is_type(obj= existing_drive_item_ids[drive_item_ids_position], type_check= dict):
+          drive_id = existing_drive_item_ids[drive_item_ids_position]
       
       if drive_id is None:
         return None
@@ -275,9 +279,9 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       "display": "Refresh List"
     }
     ]
-    remove_entry = {
-      "id": "remove_entry",
-      "display": "Remove Entry (does not remove it from ms365)"
+    parent_folder = {
+      "id": "parent_folder",
+      "display": "Parent Folder"
     }
       
     new_folder = {
@@ -292,8 +296,9 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
 
     if self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "me" or drive_item_id != "root":
       location_options_base.append(select)
+      location_options_base.append(parent_folder)
       location_options_base.append(new_folder)
-      location_options_base.append(remove_entry)
+      
     
 
     base_path = f"{drive_item_id}" if self.get_cloud_share_config_value(config_key= cloud_share).get('group') == "me" else f"items/{drive_item_id}"
@@ -311,7 +316,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
     print("-----------------------------")
     print()
     print("What folder will the CMDB be stored in")
-    print("If you have moved the folder where teh cmdb is stored you could break the hierarchy used to validate the path, but the upload should be fine.")
+    print("If you have moved the folder where the cmdb is stored you could break the hierarchy used to validate the path, but the upload should be fine.")
     print("This is because the upload does not look at the pat, IE. /3mystic/data/cmdb, it looks at the last drive ID and uses that which shouldn't change as you move folders.")
     print()
     print("-----------------------------")
@@ -321,18 +326,22 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
     print("loading folders")
 
     
-    drive_item_ids = self.get_cloud_share_config_value(config_key= cloud_share).get('drive_id')
+    existing_drive_item_ids = self.get_cloud_share_config_value(config_key= cloud_share).get('drive_id')
+    drive_item_ids = [
+      {"id": "root", "display": "root"}
+    ]
+    
     if not self.get_common().helper_type().general().is_type(obj= drive_item_ids, type_check= list):
-      drive_item_ids = [
+      existing_drive_item_ids = [
         {"id": "root", "display": "root"}
       ]
     try:
-      if len(drive_item_ids) < 1:
-        drive_item_ids.append({"id": "root", "display": "root"})
+      if len(existing_drive_item_ids) < 1:
+        existing_drive_item_ids.append({"id": "root", "display": "root"})
       if not self.get_common().helper_type().general().is_type(obj= drive_item_ids[0], type_check= dict):
-        drive_item_ids[0] = ({"id": "root", "display": "root"})
+        existing_drive_item_ids[0] = ({"id": "root", "display": "root"})
     except:
-      drive_item_ids = [
+      existing_drive_item_ids = [
         {"id": "root", "display": "root"}
       ]
 
@@ -358,14 +367,14 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
       print(f"Folders in {drive_item_ids[drive_item_position].get('display')}")
       print("-----------------------------")
       
-      drive_item_index = self.get_drive_item_index(drive_item_ids= drive_item_ids, drive_item_id_options= drive_item_id_options, position= drive_item_position, cloud_share= cloud_share,)
-
+      drive_item_index = self.get_drive_item_index(drive_item_ids= drive_item_ids, existing_drive_item_ids= existing_drive_item_ids, drive_item_id_options= drive_item_id_options, position= drive_item_position, cloud_share= cloud_share,)
+      
       index = 0
       for option in drive_item_id_options[drive_item_position]:
         print(f'{index}: {option.get("display")}')
-        if drive_item_index is None and option.get("id") == "select_folder":
+        if drive_item_position > 0 and drive_item_index is None and option.get("id") == "select_folder":
           drive_item_index = index
-        index += 1   
+        index += 1 
 
       response = self.get_common().generate_data().generate(
         generate_data_config = {
@@ -415,7 +424,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         drive_item_position = drive_item_position + 1
         continue
       
-      if drive_id_option["id"] == "remove_entry":
+      if drive_id_option["id"] == "parent_folder":
         if len(drive_item_id_options) > 1:
           drive_item_ids.pop()
           drive_item_id_options.pop()
@@ -425,9 +434,9 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
         print("already at the root")
         continue
       
+      
       drive_item_ids.append(drive_id_option)
       drive_item_position = drive_item_position + 1
-      
       
       
     self.get_cloud_share_config_value(
