@@ -127,7 +127,7 @@ class cloud_cmdb_provider_base(base):
     return self.get_config_tag_data(*args, **kwargs)
 
   def _update_config_tag_data(self,config_key, config_value, refresh = False,  *args, **kwargs):
-     self.get_config_cloud_share(refresh = refresh)[config_key] = config_value
+     self.get_config_tag_data(refresh = refresh)[config_key] = config_value
      
   def _save_config_tag_data(self, *args, **kwargs):
      self._save_config()

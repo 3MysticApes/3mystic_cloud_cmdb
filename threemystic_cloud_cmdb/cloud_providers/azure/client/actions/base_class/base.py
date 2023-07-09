@@ -88,30 +88,6 @@ class cloud_cmdb_azure_client_action_base(base):
       
   #   return [val for val in return_tag_data.values()]
 
-  def get_account_environment(self, *args, **kwargs):
-    return ""
-
-    # Update cmdb to have a list of tags for environment
-
-    # if tags is not None:
-    #         environment_key = common.FindListItem(tags.keys(), lambda item: item.lower() == "environment")
-    #         if not common.isNullOrWhiteSpace(environment_key):
-    #             return "nonprod" if "nonprod" == tags[environment_key].lower() else "prod"
-
-    #     if resource is not None and hasattr(resource, "tags"):
-    #         if resource is not None and resource.tags is not None:
-    #             environment_key = common.FindListItem(resource.tags.keys(), lambda item: item.lower() == "environment")
-    #             if not common.isNullOrWhiteSpace(environment_key):
-    #                 return "nonprod" if "nonprod" == resource.tags[environment_key].lower() else "prod"
-
-    #     if hasattr(subscription, "tags"):
-    #         if subscription.tags is not None:
-    #             environment_key = common.FindListItem(subscription.tags.keys(), lambda item: item.lower() == "environment")
-    #             if not common.isNullOrWhiteSpace(environment_key):
-    #                 return "nonprod" if "nonprod" == subscription.tags[environment_key].lower() else "prod"
-
-    #     return "nonprod" if "nonprod" or "non-prod" in subscription.display_name.lower() else "prod"
-
   def _get_report_default_row(self, account, *args, **kwargs):
     return [
       column.get("handler")({"account": account}) for column in self._get_default_columns_raw()

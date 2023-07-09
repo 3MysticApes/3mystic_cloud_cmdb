@@ -50,10 +50,6 @@ class cloud_cmdb_provider_base_cmdb(base):
   @abstractmethod
   def _get_default_columns_raw(self, *args, **kwargs):
     pass
-
-  @abstractmethod
-  def get_account_environment(self, *args, **kwargs):
-    pass
   
   @abstractmethod
   def _get_report_default_row(self, account, *args, **kwargs):
@@ -67,6 +63,16 @@ class cloud_cmdb_provider_base_cmdb(base):
   def generate_tag_columns(self, account, resource, is_cmdb = False, *args, **kwargs):
     pass
   
+  def get_account_environment(self, account = None, resource = None, *args, **kwargs):
+    # for simplicity this is handeled on the data side
+    if resource is not None and not self.get_common().helper_type().string().is_null_or_whitespace(string_value= resource.get("extra_environment")):
+      return resource.get("extra_environment")
+    
+    if account is not None:
+      return account.get("extra_environment")
+    
+    return "unknown"
+
   def get_default_columns(self, *args, **kwargs):
     return [
       column.get("display") for column in self._get_default_columns_raw(*args, **kwargs) if column.get("hidden") != True
