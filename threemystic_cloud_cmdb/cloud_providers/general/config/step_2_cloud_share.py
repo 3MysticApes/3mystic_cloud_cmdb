@@ -383,7 +383,7 @@ class cloud_cmdb_general_config_step_2_cloud_share(base):
             "messages":{
               "validation": f"Valid options are: 0 - {len(drive_item_id_options[drive_item_position]) - 1}",
             },
-            "conversion": lambda item: self.get_common().helper_type().int().get(item),
+            "conversion": lambda item: self.get_common().helper_type().int().get(item) if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) else None,
             "desc": f"Please select the tenant to use \nValid Options: 0 - {len(drive_item_id_options[drive_item_position]) - 1}",
             "default": drive_item_index,
             "handler": generate_data_handlers.get_handler(handler= "base"),
