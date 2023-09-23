@@ -16,11 +16,11 @@ class cloud_cmdb_client(base):
     
   def get_supported_providers(self, *args, **kwargs):
     return super().get_supported_providers()
-    return super().get_supported_providers()
+
   
   def init_client(self, provider, *args, **kwargs):
     provider = self.get_common().helper_type().string().set_case(string_value= provider, case= "lower") if provider is not None else ""
-
+    
     if provider not in self.get_supported_providers():
       raise self.get_common().exception().exception(
         exception_type = "argument"
@@ -35,8 +35,8 @@ class cloud_cmdb_client(base):
 
     if self._client.get(provider) is not None:
       return
-
-    if provider == "azure":      
+    
+    if provider == "azure":   
       from threemystic_cloud_cmdb.cloud_providers.azure.client import cloud_cmdb_azure_client as provider_cloud_cmdb
       self._client[provider] = provider_cloud_cmdb(
         cloud_cmdb = self,
@@ -45,8 +45,9 @@ class cloud_cmdb_client(base):
           logger= self.get_logger(), 
           common= self.get_common()
         ),
+        *args, **kwargs
       )
-      return
+      return self._client[provider]
     
     if provider == "aws":
       from threemystic_cloud_cmdb.cloud_providers.aws.client import cloud_cmdb_aws_client as provider_cloud_cmdb
@@ -57,8 +58,9 @@ class cloud_cmdb_client(base):
           logger= self.get_logger(), 
           common= self.get_common()
         ),
+        *args, **kwargs
       )
-      return  
+      return self._client[provider]
        
     raise self.get_common().exception().exception(
       exception_type = "argument"
@@ -79,11 +81,13 @@ class cloud_cmdb_client(base):
           name = "provider",
           message = f"provider cannot be null or whitespace"
         )
-  
+    
     provider = self.get_common().helper_type().string().set_case(string_value= provider, case= "lower")
     if not hasattr(self, "_client"):
-      self.init_client(provider= provider,  *args, **kwargs)
-      return self.client(provider= provider, *args, **kwargs)
+      return self.init_client(provider= provider,  *args, **kwargs)
+    
+    if self._client.get(provider) is None:
+      return self.init_client(provider= provider,  *args, **kwargs)
     
     return self._client.get(provider)
 

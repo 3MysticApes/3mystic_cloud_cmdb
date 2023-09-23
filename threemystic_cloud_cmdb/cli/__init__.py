@@ -1,5 +1,7 @@
 import sys
 from threemystic_common.base_class.base_script_options import base_process_options
+from threemystic_cloud_data_client.cloud_data_client import cloud_data_client
+from threemystic_cloud_client.cloud_client import cloud_client
 
 
 class cloud_cmdb_cli(base_process_options):
@@ -83,22 +85,37 @@ class cloud_cmdb_cli(base_process_options):
     return      
   
 
-  def version_dispaly(self, *args, **kwargs): 
-    from threemystic_cloud_data_client.cloud_data_client import cloud_data_client
-    cloud_data_client = cloud_data_client(
-      logger= self._cloud_cmdb_client.get_common().get_logger(), 
+  def version_dispaly(self, *args, **kwargs):
+    data_client = cloud_data_client(
+      logger= self._cloud_cmdb_client.get_common().get_logger(),
       common= self._cloud_cmdb_client.get_common())
-    from threemystic_cloud_client.cloud_client import cloud_client
-    cloud_client = cloud_client(
-      logger= self._cloud_cmdb_client.get_common().get_logger(), 
+    client = cloud_client(
+      logger= self._cloud_cmdb_client.get_common().get_logger(),
       common= self._cloud_cmdb_client.get_common())
     
     print(f"You currenly have installed")    
     print(f"3mystic_cloud_cmdb: v{self._cloud_cmdb_client.version()}")
-    print(f"3mystic_cloud_data_client: v{cloud_data_client.version()}")
-    print(f"3mystic_cloud_client: v{cloud_client.version()}")
+    print(f"3mystic_cloud_data_client: v{data_client.version()}")
+    print(f"3mystic_cloud_client: v{client.version()}")
     print(f"3mystic_common: v{self._cloud_cmdb_client.get_common().version()}")
     print()
+    print(f"Current supported cloud providers: {self._cloud_cmdb_client.get_supported_providers()}")
+    print(f"Cloud Providers config status: ")
+    
+    print(f"CMDB Client General Configuration: {self._cloud_cmdb_client.is_general_config_completed()}")
+    print()
+
+    print(f"3mystic_cloud_data_client General Configuration: {data_client.client(provider= self._cloud_cmdb_client.get_supported_providers()[0], suppress_parser_help= True).get_cloud_data_client().is_general_config_completed()}")
+    print()
+    for cloud_provider in client.get_supported_providers():
+      provider_data_client = data_client.client(provider= cloud_provider, suppress_parser_help= True)
+      
+      print()
+      print(f"{cloud_provider}: ")
+      print(f"cmdb client: {self._cloud_cmdb_client.client(provider= cloud_provider, suppress_parser_help= True).get_cloud_cmdb().is_config_completed()}")
+      print(f"3mystic_cloud_data_client: {provider_data_client.get_cloud_data_client().is_config_completed()}")
+      print(f"3mystic_cloud_client: {provider_data_client.get_cloud_client().is_provider_config_completed() if provider_data_client.get_cloud_client() is not None else False}")
+
 
   def __get_client_acount(self, *args, **kwargs):
     if not hasattr(self, "_client_action"):

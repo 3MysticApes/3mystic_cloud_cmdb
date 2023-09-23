@@ -9,6 +9,7 @@ class cloud_cmdb_provider_base_client(base):
     super().__init__(*args, **kwargs)
     self.__set_cloud_cmdb(*args, **kwargs)
     self.__set_cloud_data_client(*args, **kwargs)
+    self.__set_suppres_parser_help(*args, **kwargs)
     
     self._default_parser_init = {
       "prog": f'3mystic_cloud_cmdb -g -p {kwargs["provider"]}',
@@ -25,6 +26,57 @@ class cloud_cmdb_provider_base_client(base):
 
     self._set_data_action()
   
+  def get_client_parser_args_actions(self, *args, **kwargs):
+    return {}
+  
+  def get_default_parser_args_actions(self, *args, **kwargs):
+    return {
+      "--all, -a": {
+        "default": None, 
+        "const": "all",
+        "dest": "data_action",
+        "help": "Data Action: This will generate cmdb for all supported reports.",
+        "action": 'store_const'
+      },
+      "--cloudstorage": {
+        "default": None, 
+        "const": "cloudstorage",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
+        "action": 'store_const' # could look into append_const
+      },
+      "--budget": {
+        "default": None, 
+        "const": "budget",
+        "dest": "data_action",
+        "help": "Data Action: This pulls a general budget to provide you insights in your accounts/subscriptions",
+        "action": 'store_const'
+      },
+      "--storage": {
+        "default": None, 
+        "const": "storage",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either VM Disks or EC2 Storage depending on the provider",
+        "action": 'store_const'
+      },
+      "--vm": {
+        "default": None, 
+        "const": "vm",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either EC2 or VM depending on the provider",
+        "action": 'store_const'
+      },
+    }
+  
+  def get_suppres_parser_help(self, *args, **kwargs):
+    if hasattr(self, "_suppres_parser_help"):
+      return self._suppres_parser_help
+    return False
+    
+
+  def __set_suppres_parser_help(self, suppress_parser_help = False, *args, **kwargs):
+    self._suppres_parser_help = suppress_parser_help
+  
   def get_default_parser_action_args(self, *args, **kwargs):
     if hasattr(self, "_cmdb_default_parser_action_args"):
       return self._cmdb_default_parser_action_args
@@ -32,20 +84,8 @@ class cloud_cmdb_provider_base_client(base):
     from threemystic_cloud_data_client.cloud_providers.base_class.base_client import cloud_data_client_provider_base_client
     self._cmdb_default_parser_action_args = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
-      {
-        "--all, -a": {
-          "default": None, 
-          "const": "all",
-          "dest": "data_action",
-          "help": "Data Action: This will generate cmdb for all supported reports.",
-          "action": 'store_const'
-        }
-      },      
-      {
-        arg_key:args
-        for arg_key, args in cloud_data_client_provider_base_client.get_default_parser_args_actions().items()
-        if args.get("const") != "vmss"
-      },
+      self.get_default_parser_args_actions(),
+      self.get_client_parser_args_actions()
     ])
     return self.get_default_parser_action_args()
 
@@ -86,8 +126,9 @@ class cloud_cmdb_provider_base_client(base):
     )
 
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= processed_info["processed_data"].get("data_action")):
-      self._get_action_parser().print_help()
-      return None
+      if not self.get_suppres_parser_help():
+        self._get_action_parser().print_help()
+        return None
     
     self._action_from_arguments = processed_info["processed_data"]
     return self.get_action_from_arguments()  

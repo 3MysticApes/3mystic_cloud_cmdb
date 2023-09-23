@@ -59,7 +59,7 @@ class cloud_cmdb_general_config_step_1(base):
     if not super().step(run_base_config= True):
       return
     
-    if self.is_general_config_completed_only():
+    if self.is_general_config_completed():
       if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self._processed_arg_info.get("config_step")):
         step_action = __import__(f'threemystic_cloud_cmdb.cloud_providers.general.config.{self._processed_arg_info.get("config_step")}', fromlist=[f'cloud_cmdb_general_config_{self._processed_arg_info.get("config_step")}'])
         getattr(step_action, f'cloud_cmdb_general_config_{self._processed_arg_info.get("config_step")}')(
@@ -110,7 +110,7 @@ class cloud_cmdb_general_config_step_1(base):
       from threemystic_cloud_cmdb.cloud_providers.general.config.step_2 import cloud_cmdb_general_config_step_2 as step
       next_step = step(common= self.get_common(), logger= self.get_logger())
       
-      if not self.is_general_config_completed_only():
+      if not self.is_general_config_completed():
         self.update_general_config_completed(status= "step1")
       next_step.step()
     else:

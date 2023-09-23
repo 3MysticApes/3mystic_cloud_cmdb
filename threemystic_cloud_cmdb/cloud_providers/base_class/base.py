@@ -63,12 +63,15 @@ class cloud_cmdb_provider_base(base):
     
     return False
 
-    
-  def is_general_config_completed_only(self, *args, **kwargs):
+  
+  def is_config_completed(self, *args, **kwargs):
+    return True and self.is_general_config_completed()
+  
+  def is_general_config_completed(self, *args, **kwargs):
     return self.get_config().get("_config_process") is True
 
-  def is_general_config_completed(self, *args, **kwargs):
-    return self.is_general_config_completed_only() and self.is_data_client_config_completed()
+  def is_general_config_data_general_config_completed(self, *args, **kwargs):
+    return self.is_general_config_completed() and self.is_data_client_config_completed()
     
   
   def get_main_directory_name(self, *args, **kwargs):
