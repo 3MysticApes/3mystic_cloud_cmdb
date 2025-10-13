@@ -1,3 +1,7 @@
+# Compiled Packages
+/threemystic_cloud_cmdb-*.tar.gz
+/threemystic_cloud_cmdb-*.whl
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
