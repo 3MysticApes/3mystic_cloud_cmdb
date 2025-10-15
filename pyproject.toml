@@ -10,7 +10,7 @@ name = "threemystic-cloud-cmdb"
 description = "A lightweight CMDB to help you track your cloud resources from various providers"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
   { name="Ron Truex" },
 ]
@@ -28,13 +28,12 @@ classifiers = [
 ]
 dependencies = [
   "colorama; platform_system == 'Windows'",
-  "threemystic-cloud-data-client >= 0.1.90",
-  "typing-extensions >= 4.4.0",
-  "asyncio >= 3.4.3",
-  "tqdm >= 4.65.0",
-  "openpyxl >= 3.1.2",
-  "lxml >= 4.9.2",
-  "msgraph-sdk >= 1.0.0a12",  
+  "threemystic-cloud-data-client >= 0.1.91",
+  "typing-extensions >= 4.15.0",
+  "tqdm >= 4.67.0",
+  "openpyxl >= 3.1.5",
+  "lxml >= 6.0.2",
+  "msgraph-sdk >= 1.46.0",  
   "polling2 >= 0.5.0",
 
 ]
