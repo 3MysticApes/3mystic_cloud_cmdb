@@ -163,9 +163,9 @@ class cloud_cmdb_provider_base_cmdb(base):
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_region") is True:
       if not is_cmdb:
-        default_row.append(self.get_cloud_client().get_azresource_location(resource= resource))
+        default_row.append(self.get_cloud_client().get_resource_location(resource= resource))
       else:
-        default_row["region"] = self.get_cloud_client().get_azresource_location(resource= resource)
+        default_row["region"] = self.get_cloud_client().get_resource_location(resource= resource)
       
     
     return default_row
