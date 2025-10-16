@@ -32,7 +32,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "Identifier":{
           "display": "Identifier",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_id"])
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_data", "id"])
         },
         "Name":{
           "display": "Name",

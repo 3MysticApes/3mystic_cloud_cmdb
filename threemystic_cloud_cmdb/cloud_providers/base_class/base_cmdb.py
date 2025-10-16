@@ -154,7 +154,11 @@ class cloud_cmdb_provider_base_cmdb(base):
     default_row = self._get_report_default_row(account= account) if is_cmdb == False else self._get_report_default_row_cmdb(account= account)
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_resourcegroup") is True:
-      data_resourcegroups = self.get_common().helper_type().general().get_container_value(container= resource, value_key= ["extra_data", "resourcegroups"])
+      data_resourcegroups = self.get_common().helper_type().list().unique_list(
+        data= self.get_common().helper_type().general().get_container_value(container= resource, value_key= ["extra_data", "resourcegroups"]),
+        case_sensitive = False
+      )
+      
       if not is_cmdb:
         default_row.append(self.get_common().helper_type().string().join(",", data_resourcegroups))
       else:
