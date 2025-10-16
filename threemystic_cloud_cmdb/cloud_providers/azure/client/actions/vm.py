@@ -68,13 +68,13 @@ class cloud_cmdb_azure_client_action(base):
           "display": "Instance Type",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["sku", "name"])
         },
-        # "AMIID": {
-        #   "display": "AMI ID",
-        #   "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"]) 
-        #                            if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"])) else 
-        #                            self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])])
-        #   )
-        # },
+        "AMIID": {
+          "display": "AMI ID",
+          "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"]) 
+                                   if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"])) else 
+                                   self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])])
+          )
+        },
         "AMIName": {
           "display": "AMI Name",
           "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","version"])])  
@@ -153,10 +153,10 @@ class cloud_cmdb_azure_client_action(base):
           "display": "Tenancy",
           "handler": lambda item: None
         },
-        # "PrivateDnsName":{
-        #   "display": "PrivateDnsName",
-        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_fqdn(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
-        # },
+        "PrivateDnsName":{
+          "display": "PrivateDnsName",
+          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_fqdn(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
+        },
         # "PrivateIpAddress":{
         #   "display": "PrivateIpAddress",
         #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_ips(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
@@ -254,43 +254,43 @@ class cloud_cmdb_azure_client_action(base):
   
   def _get_vm_subnets(self, vm, vm_nics, *args, **kwargs):
     if hasattr(self, "_vm_subnets"):
-      if self.get_cloud_client().get_resource_id_from_resource(resource= vm) in self._vm_subnets:
-        return self._vm_subnets[self.get_cloud_client().get_resource_id_from_resource(resource= vm)]
+      if self.get_cloud_client().get_resource_id(resource= vm) in self._vm_subnets:
+        return self._vm_subnets[self.get_cloud_client().get_resource_id(resource= vm)]
 
     if not hasattr(self, "_vm_subnets"):
       self._vm_subnets = {}
 
     if vm_nics is None:
-      self._vm_subnets[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+      self._vm_subnets[self.get_cloud_client().get_resource_id(resource= vm)] = []
       return self._get_vm_subnets(vm= vm, vm_nics= vm_nics, *args, **kwargs)
     
-    self._vm_subnets[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = [
-      self.get_cloud_client().get_resource_id_from_resource(resource= self.get_item_data_value(item_data= ip_config, value_key=["properties","subnet"]))
+    self._vm_subnets[self.get_cloud_client().get_resource_id(resource= vm)] = [
+      self.get_cloud_client().get_resource_id(resource= self.get_item_data_value(item_data= ip_config, value_key=["properties","subnet"]))
       for ip_config in self._get_vm_nic_ip_configurations(vm= vm, vm_nics= vm_nics)
-      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_cloud_client().get_resource_id_from_resource(resource= self.get_item_data_value(item_data= ip_config, value_key=["properties","subnet"])) )
+      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_cloud_client().get_resource_id(resource= self.get_item_data_value(item_data= ip_config, value_key=["properties","subnet"])) )
     ]
         
     return self._get_vm_subnets(vm= vm, vm_nics= vm_nics)
   
   def _get_vm_private_fqdn(self, vm, vm_nics, *args, **kwargs):    
     if hasattr(self, "_vm_nic_fqdn"):
-      if self.get_cloud_client().get_resource_id_from_resource(resource= vm) in self._vm_nic_fqdn:
-        return self._vm_nic_fqdn[self.get_cloud_client().get_resource_id_from_resource(resource= vm)]
+      if self.get_cloud_client().get_resource_id(resource= vm) in self._vm_nic_fqdn:
+        return self._vm_nic_fqdn[self.get_cloud_client().get_resource_id(resource= vm)]
 
     if not hasattr(self, "_vm_nic_fqdn"):
       self._vm_nic_fqdn = {}
 
     if vm_nics is None:
-      self._vm_nic_fqdn[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+      self._vm_nic_fqdn[self.get_cloud_client().get_resource_id(resource= vm)] = []
       return self._get_vm_private_fqdn(vm= vm, vm_nics= vm_nics, *args, **kwargs)
     
-    self._vm_nic_fqdn[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+    self._vm_nic_fqdn[self.get_cloud_client().get_resource_id(resource= vm)] = []
     for nic in vm_nics:
       dns_settings = self.get_item_data_value(item_data= nic, value_key=["properties","dnsSettings"])
       if self.get_item_data_value(item_data= dns_settings, value_key=["internalDomainNameSuffix"]) is None:
         continue
       
-      self._vm_nic_fqdn[self.get_cloud_client().get_resource_id_from_resource(resource= vm)].append(self.get_item_data_value(item_data= dns_settings, value_key=["internalDomainNameSuffix"]))
+      self._vm_nic_fqdn[self.get_cloud_client().get_resource_id(resource= vm)].append(self.get_item_data_value(item_data= dns_settings, value_key=["internalDomainNameSuffix"]))
 
     
     return self._get_vm_private_fqdn(vm= vm, vm_nics= vm_nics, *args, **kwargs)
@@ -314,23 +314,23 @@ class cloud_cmdb_azure_client_action(base):
   
   def _get_vm_nic_ip_configurations(self, vm, vm_nics, *args, **kwargs):    
     if hasattr(self, "_vm_nic_ip_configurations"):
-      if self.get_cloud_client().get_resource_id_from_resource(resource= vm) in self._vm_nic_ip_configurations:
-        return self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id_from_resource(resource= vm)]
+      if self.get_cloud_client().get_resource_id(resource= vm) in self._vm_nic_ip_configurations:
+        return self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id(resource= vm)]
 
     if not hasattr(self, "_vm_nic_ip_configurations"):
       self._vm_nic_ip_configurations = {}
 
     if vm_nics is None:
-      self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+      self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id(resource= vm)] = []
       return self._get_vm_nic_ip_configurations(vm= vm, vm_nics= vm_nics, *args, **kwargs)
     
-    self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+    self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id(resource= vm)] = []
     for nic in vm_nics:
       ip_configurations = self.get_item_data_value(item_data= nic, value_key=["properties","ipConfigurations"])
       if ip_configurations is None:
         continue
       
-      self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] += [ip_config for ip_config in ip_configurations]
+      self._vm_nic_ip_configurations[self.get_cloud_client().get_resource_id(resource= vm)] += [ip_config for ip_config in ip_configurations]
 
     
     return self._get_vm_nic_ip_configurations(vm= vm, vm_nics= vm_nics, *args, **kwargs)
@@ -373,62 +373,62 @@ class cloud_cmdb_azure_client_action(base):
   
   def _get_vm_public_ips_vm_load_balancers(self, vm, vm_load_balancers, *args, **kwargs):
     if hasattr(self, "_vm_load_balancers"):
-      if self.get_cloud_client().get_resource_id_from_resource(resource= vm) in self._vm_load_balancers:
-        return self._vm_load_balancers[self.get_cloud_client().get_resource_id_from_resource(resource= vm)]
+      if self.get_cloud_client().get_resource_id(resource= vm) in self._vm_load_balancers:
+        return self._vm_load_balancers[self.get_cloud_client().get_resource_id(resource= vm)]
 
     if not hasattr(self, "_vm_load_balancers"):
       self._vm_load_balancers = {}
 
     if vm_load_balancers is None:
-      self._vm_load_balancers[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+      self._vm_load_balancers[self.get_cloud_client().get_resource_id(resource= vm)] = []
       return self._get_vm_public_ips_vm_load_balancers(vm= vm, vm_load_balancers= vm_load_balancers, *args, **kwargs)
 
-    self._vm_load_balancers[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+    self._vm_load_balancers[self.get_cloud_client().get_resource_id(resource= vm)] = []
     for load_balancer in vm_load_balancers:
       if self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]) is None:
         continue
 
       for ip in self.get_item_data_value(item_data= load_balancer, value_key=["extra_public_ips"]):
-        self._vm_load_balancers[self.get_cloud_client().get_resource_id_from_resource(resource= vm)].append(ip)
+        self._vm_load_balancers[self.get_cloud_client().get_resource_id(resource= vm)].append(ip)
 
     return self._get_vm_public_ips_vm_load_balancers(vm= vm, vm_load_balancers= vm_load_balancers, *args, **kwargs)
 
   
   def _get_vm_public_ips_vm_nics(self, vm, vm_nics, *args, **kwargs):
     if hasattr(self, "_vm_nic_public_ips"):
-      if self.get_cloud_client().get_resource_id_from_resource(resource= vm) in self._vm_nic_public_ips:
-        return self._vm_nic_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)]
+      if self.get_cloud_client().get_resource_id(resource= vm) in self._vm_nic_public_ips:
+        return self._vm_nic_public_ips[self.get_cloud_client().get_resource_id(resource= vm)]
 
     if not hasattr(self, "_vm_nic_public_ips"):
       self._vm_nic_public_ips = {}
 
     if vm_nics is None:
-      self._vm_nic_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+      self._vm_nic_public_ips[self.get_cloud_client().get_resource_id(resource= vm)] = []
       return self._get_vm_public_ips_vm_nics(vm= vm, vm_nics= vm_nics, *args, **kwargs)
 
-    self._vm_nic_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+    self._vm_nic_public_ips[self.get_cloud_client().get_resource_id(resource= vm)] = []
     for nic in vm_nics:
       if self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]) is None:
         continue
 
       for ip in self.get_item_data_value(item_data= nic, value_key=["extra_public_ips"]):
-        self._vm_nic_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)].append(ip)
+        self._vm_nic_public_ips[self.get_cloud_client().get_resource_id(resource= vm)].append(ip)
 
     return self._get_vm_public_ips_vm_nics(vm= vm, vm_nics= vm_nics, *args, **kwargs)
 
   def _get_vm_public_ips(self, vm, vm_nics, vm_load_balancers, *args, **kwargs):
     if hasattr(self, "_vm_public_ips"):
-      if self.get_cloud_client().get_resource_id_from_resource(resource= vm) in self._vm_public_ips:
-        return self._vm_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)]
+      if self.get_cloud_client().get_resource_id(resource= vm) in self._vm_public_ips:
+        return self._vm_public_ips[self.get_cloud_client().get_resource_id(resource= vm)]
 
     if not hasattr(self, "_vm_public_ips"):
       self._vm_public_ips = {}
 
     if vm_nics is None and vm_load_balancers is None:
-       self._vm_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = []
+       self._vm_public_ips[self.get_cloud_client().get_resource_id(resource= vm)] = []
        return self._get_vm_public_ips(vm= vm, vm_nics= vm_nics, vm_load_balancers= vm_load_balancers, *args, **kwargs)
 
-    self._vm_public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = (
+    self._vm_public_ips[self.get_cloud_client().get_resource_id(resource= vm)] = (
       self._get_vm_public_ips_vm_nics(vm= vm, vm_nics= vm_nics) +
       self._get_vm_public_ips_vm_load_balancers(vm= vm, vm_load_balancers= vm_load_balancers)
     )     
