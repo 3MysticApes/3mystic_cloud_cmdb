@@ -488,7 +488,6 @@ class cloud_cmdb_provider_base_cmdb(base):
     return_column_cmdb_data = {}
     
     for sheet_key, item in self._load_cmdb_column_data().items():
-      print(item.items())
       return_column_cmdb_data[sheet_key]= (
         self.get_default_report_columns(sheet_key= sheet_key, is_cmdb= True) +
         [self.get_common().helper_type().dictionary().merge_dictionary([
