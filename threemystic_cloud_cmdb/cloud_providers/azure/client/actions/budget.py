@@ -46,23 +46,23 @@ class cloud_cmdb_azure_client_action(base):
         },
         "last_seven_days":{
           "display": "Last7Days",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="last_seven_days")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["data", self.get_item_data_value(item_data= item, value_key="cost_metric_main"), "last_seven_days"])
         },
         "month_to_date":{
           "display": "MonthToDate",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="month_to_date")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["data", self.get_item_data_value(item_data= item, value_key="cost_metric_main"), "month_to_date"])
         },
         "month_forecast":{
           "display": "MonthTotalForcast",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="month_forecast")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["data", self.get_item_data_value(item_data= item, value_key="cost_metric_main"), "month_forecast"])
         },
         "year_to_date":{
           "display": "FiscalYearToDate",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="fiscal_year_to_date")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["data", self.get_item_data_value(item_data= item, value_key="cost_metric_main"), "fiscal_year_to_date"])
         },
         "year_forecast":{
           "display": "FiscalYearForcast",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="fiscal_year_forecast")
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["data", self.get_item_data_value(item_data= item, value_key="cost_metric_main"), "fiscal_year_forecast"])
         },
       } 
     }
