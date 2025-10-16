@@ -65,7 +65,7 @@ class cloud_cmdb_general_cmdb_connector_base(base):
       "handler": lambda item: self.get_common().helper_type().string().set_case(
         string_value= self.get_common().encryption().hash(hash_method= "sha1").generate_hash(
           data= self.get_common().helper_type().string().set_case(
-            string_value= f'{self.get_cloud_client().get_provider()}-{item.get("raw_data").get("extra_id")}',
+            string_value= f'{self.get_cloud_client().get_provider()}-{self.get_common().helper_type().general().get_container_value(container= item.get("raw_data"), value_key= ["extra_data", "id"])}',
             case= "lower"
           ),
         ),

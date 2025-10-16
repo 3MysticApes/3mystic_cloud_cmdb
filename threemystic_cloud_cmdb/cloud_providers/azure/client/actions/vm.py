@@ -39,7 +39,7 @@ class cloud_cmdb_azure_client_action(base):
         },        
         "ASGArn": {
           "display": "ID",
-          "handler": lambda item: self.get_item_data_value(item_data= item, value_key="extra_id"),
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_data", "id"]),
           "cmdb": {
             "display": "ID_Arn"
           }
@@ -68,13 +68,13 @@ class cloud_cmdb_azure_client_action(base):
           "display": "Instance Type",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["sku", "name"])
         },
-        "AMIID": {
-          "display": "AMI ID",
-          "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"]) 
-                                   if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"])) else 
-                                   self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])])
-          )
-        },
+        # "AMIID": {
+        #   "display": "AMI ID",
+        #   "handler": lambda item: (self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"]) 
+        #                            if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","id"])) else 
+        #                            self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"])])
+        #   )
+        # },
         "AMIName": {
           "display": "AMI Name",
           "handler": lambda item: self.get_common().helper_type().string().join(separator= ".", str_array= [self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","publisher"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","sku"]), self.get_item_data_value(item_data= item, value_key=["properties", "virtualMachineProfile", "storageProfile","imageReference","version"])])  
@@ -95,8 +95,7 @@ class cloud_cmdb_azure_client_action(base):
         },
         "InstanceID":{
           "display": "Instance ID",
-          "handler": lambda item: self.get_cloud_client().get_resource_id_from_resource(
-              resource= self.get_item_data_value(item_data= item, value_key="extra_id"))
+          "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_data", "id"])
         },
         "InstanceType":{
           "display": "Instance Type",
@@ -154,30 +153,30 @@ class cloud_cmdb_azure_client_action(base):
           "display": "Tenancy",
           "handler": lambda item: None
         },
-        "PrivateDnsName":{
-          "display": "PrivateDnsName",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_fqdn(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
-        },
-        "PrivateIpAddress":{
-          "display": "PrivateIpAddress",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_ips(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
-        },
+        # "PrivateDnsName":{
+        #   "display": "PrivateDnsName",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_fqdn(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
+        # },
+        # "PrivateIpAddress":{
+        #   "display": "PrivateIpAddress",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_private_ips(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
+        # },
         "ProductCodes":{
           "display": "ProductCodes",
           "handler": lambda item: None
         },
-        "PublicDnsName":{
-          "display": "PublicDnsName",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_public_ips_fqdn_nics(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
-        },
-        "SubnetId":{
-          "display": "SubnetId",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_subnets(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
-        },
-        "VpcId":{
-          "display": "VpcId",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_vnets(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
-        },
+        # "PublicDnsName":{
+        #   "display": "PublicDnsName",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_public_ips_fqdn_nics(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
+        # },
+        # "SubnetId":{
+        #   "display": "SubnetId",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_subnets(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
+        # },
+        # "VpcId":{
+        #   "display": "VpcId",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_vnets(vm= item, vm_nics= self.get_item_data_value(item_data= item, value_key=["extra_nics"])))
+        # },
         "Architecture":{
           "display": "Architecture",
           "handler": lambda item: None
@@ -185,10 +184,6 @@ class cloud_cmdb_azure_client_action(base):
         "EbsOptimized":{
           "display": "EbsOptimized",
           "handler": lambda item: None
-        },
-        "Tags":{
-          "display": "Tags",
-          "handler": lambda item: self.generate_resource_tags_csv(tags= self.get_item_data_value(item_data= item, value_key=["tags"]))
         },
         "VirtualizationType":{
           "display": "VirtualizationType",
@@ -198,19 +193,23 @@ class cloud_cmdb_azure_client_action(base):
           "display": "AvailabilitySet",
           "handler": lambda item: self.get_item_data_value(item_data= item, value_key=["extra_availability_set", "name"])
         },
-        "LBType":{
-          "display": "LB Type",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= "-", 
-            str_array= self._get_vm_load_balancers_type(vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])))
-        },
-        "LBDNSName":{
-          "display": "LB DNS Name",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_public_ips_fqdn_load_balancers(vm= item, vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])))
-        },
-        "LBName":{
-          "display": "LB Name",
-          "handler": lambda item: self.get_common().helper_type().string().join(separator= "-", 
-            str_array= self._get_vm_load_balancers_name(vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])))
+        # "LBType":{
+        #   "display": "LB Type",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= "-", 
+        #     str_array= self._get_vm_load_balancers_type(vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])))
+        # },
+        # "LBDNSName":{
+        #   "display": "LB DNS Name",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= ",", str_array= self._get_vm_public_ips_fqdn_load_balancers(vm= item, vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])))
+        # },
+        # "LBName":{
+        #   "display": "LB Name",
+        #   "handler": lambda item: self.get_common().helper_type().string().join(separator= "-", 
+        #     str_array= self._get_vm_load_balancers_name(vm_load_balancers= self.get_item_data_value(item_data= item, value_key=["extra_load_balancers"])))
+        # },
+        "Tags":{
+          "display": "Tags",
+          "handler": lambda item: self.generate_resource_tags_csv(tags= self.get_item_data_value(item_data= item, value_key=["tags"]))
         },
       } 
     }

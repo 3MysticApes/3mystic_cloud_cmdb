@@ -65,10 +65,15 @@ class cloud_cmdb_provider_base_cmdb(base):
   
   def get_account_environment(self, account = None, resource = None, *args, **kwargs):
     # for simplicity this is handeled on the data side
-    if resource is not None and not self.get_common().helper_type().string().is_null_or_whitespace(string_value= resource.get("extra_environment")):
-      return resource.get("extra_environment")
-    
+    if resource is not None:
+      environment = self.get_common().helper_type().general().get_container_value(container= resource, value_key= ["extra_data", "environment"])
+      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value=environment):
+        return environment
+
     if account is not None:
+      environment = self.get_common().helper_type().general().get_container_value(container= account, value_key= ["extra_data", "environment"])
+      if not self.get_common().helper_type().string().is_null_or_whitespace(string_value=environment):
+        return environment
       return account.get("extra_environment")
     
     return "unknown"
@@ -149,10 +154,11 @@ class cloud_cmdb_provider_base_cmdb(base):
     default_row = self._get_report_default_row(account= account) if is_cmdb == False else self._get_report_default_row_cmdb(account= account)
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_resourcegroup") is True:
+      data_resourcegroups = self.get_common().helper_type().general().get_container_value(container= resource, value_key= ["extra_data", "resourcegroups"])
       if not is_cmdb:
-        default_row.append(self.get_common().helper_type().string().join(",", resource.get("extra_resourcegroups")))
+        default_row.append(self.get_common().helper_type().string().join(",", data_resourcegroups))
       else:
-        default_row["resource_group"] = self.get_common().helper_type().string().join(",", resource.get("extra_resourcegroups"))
+        default_row["resource_group"] = self.get_common().helper_type().string().join(",", data_resourcegroups)
 
     if self.get_workbook_general_data(sheet_key= sheet_key).get("include_environment") is True:
       if not is_cmdb:
@@ -232,22 +238,23 @@ class cloud_cmdb_provider_base_cmdb(base):
         
         while len(report_data) > 0:
           report_data_item=report_data.pop(0)
+          account_data = self.get_common().helper_type().general().get_container_value(container= report_data_item, value_key= ["extra_data", "account"])
           self.get_excel_workbook(sheet_key= sheet_key).append(
             self.get_report_default_row(
               sheet_key= sheet_key,
-              account= report_data_item.get("extra_account"), 
+              account= account_data,
               resource= report_data_item,  
-              region= report_data_item.get("extra_region"), 
-              resource_groups = report_data_item.get("extra_resourcegroups"),
+              region= self.get_common().helper_type().general().get_container_value(container= report_data_item, value_key= ["extra_data", "region"]), 
+              resource_groups = self.get_common().helper_type().general().get_container_value(container= report_data_item, value_key= ["extra_data", "resourcegroups"]),
               is_cmdb= False
               ) +
             [self.get_handler_column_data(column_data= column_data, is_cmdb= False)(report_data_item) for _, column_data in self.get_workbook_columns()[sheet_key].items()] +
             self.generate_tag_columns(
-              account=report_data_item.get("extra_account"),
+              account=account_data,
               resource= report_data_item,
               is_cmdb= False)
           )
-          self.save_cmdb_workbook_item(sheet_key= sheet_key, account= report_data_item.get("extra_account"), report_data_item= report_data_item)
+          self.save_cmdb_workbook_item(sheet_key= sheet_key, account= account_data, report_data_item= report_data_item)
       
       self._stop_is_processing_sheet_data_or_set_processing(sheet_key= sheet_key)
 
@@ -327,8 +334,8 @@ class cloud_cmdb_provider_base_cmdb(base):
             sheet_key= sheet_key,
             account= account, 
             resource= report_data_item,  
-            region= report_data_item.get("extra_region"), 
-            resource_groups = report_data_item.get("extra_resourcegroups"),
+            region= self.get_common().helper_type().general().get_container_value(container= report_data_item, value_key= ["extra_data", "region"]), 
+            resource_groups = self.get_common().helper_type().general().get_container_value(container= report_data_item, value_key= ["extra_data", "resourcegroups"]),
             is_cmdb = True),
           {
             # This needs to be updated to ID
